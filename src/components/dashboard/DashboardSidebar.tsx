@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NavLink } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Search, 
@@ -12,17 +13,17 @@ const sidebarItems = [
   {
     title: "Dashboard",
     icon: LayoutDashboard,
-    active: true
+    path: "/",
   },
   {
     title: "Search",
     icon: Search,
-    active: false
+    path: "/search",
   },
   {
     title: "Settings",
     icon: Settings,
-    active: false
+    path: "/settings",
   }
 ];
 
@@ -45,17 +46,20 @@ export function DashboardSidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
         {sidebarItems.map((item) => (
-          <Button
+          <NavLink
             key={item.title}
-            variant={item.active ? "default" : "ghost"}
-            className={cn(
-              "w-full justify-start gap-3 h-11",
-              item.active && "bg-primary text-primary-foreground shadow-sm"
+            to={item.path}
+            className={({ isActive }) => cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
+              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              isActive
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-sidebar-foreground"
             )}
           >
             <item.icon className="w-5 h-5" />
             {item.title}
-          </Button>
+          </NavLink>
         ))}
       </nav>
 
