@@ -60,7 +60,7 @@ const sampleDocuments = [
 
 export function DocumentList() {
   return (
-    <div className="p-6">
+    <div className="p-6 animate-fade-in-0 relative">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Recent Documents</h2>
@@ -72,16 +72,21 @@ export function DocumentList() {
 
       <div className="grid gap-4">
         {sampleDocuments.map((doc, index) => (
-          <DocumentCard
+          <div 
             key={index}
-            title={doc.title}
-            uploadDate={doc.uploadDate}
-            uploader={doc.uploader}
-            department={doc.department}
-            sharedWith={doc.sharedWith}
-            priority={doc.priority}
-            fileType={doc.fileType}
-          />
+            className="animate-fade-in-0"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <DocumentCard
+              title={doc.title}
+              uploadDate={doc.uploadDate}
+              uploader={doc.uploader}
+              department={doc.department}
+              sharedWith={doc.sharedWith}
+              priority={doc.priority}
+              fileType={doc.fileType}
+            />
+          </div>
         ))}
       </div>
     </div>

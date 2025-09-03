@@ -2,11 +2,13 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DocumentList } from "@/components/dashboard/DocumentList";
 import { AIChatFAB } from "@/components/ai/AIChatFAB";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 const Index = () => {
   return (
     <>
-      <div className="min-h-screen bg-background flex">
+      <AnimatedBackground />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-accent/5 flex relative z-10">
         {/* Sidebar */}
         <DashboardSidebar />
         
