@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
@@ -30,6 +30,7 @@ const sidebarItems = [
 
 export function DashboardSidebar() {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     toast({
@@ -39,7 +40,7 @@ export function DashboardSidebar() {
     
     // Simulate logout process
     setTimeout(() => {
-      window.location.href = '/login';
+      navigate('/login');
     }, 1000);
   };
 

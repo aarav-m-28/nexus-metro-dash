@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 
@@ -19,6 +20,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/search" element={<Search />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/login" element={<Login />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
