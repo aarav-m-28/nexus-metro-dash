@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NavLink } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
   Search, 
@@ -28,6 +29,20 @@ const sidebarItems = [
 ];
 
 export function DashboardSidebar() {
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    toast({
+      title: "Logged out successfully",
+      description: "You have been securely logged out of the system",
+    });
+    
+    // Simulate logout process
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 1000);
+  };
+
   return (
     <div className="fixed left-0 top-0 h-full w-60 bg-sidebar/80 backdrop-blur-sm border-r border-sidebar-border flex flex-col animate-slide-in-from-bottom-4 z-20">
       {/* Logo Section */}
@@ -83,7 +98,8 @@ export function DashboardSidebar() {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="w-full justify-start gap-2 text-muted-foreground hover:text-sidebar-foreground"
+          onClick={handleLogout}
+          className="w-full justify-start gap-2 text-muted-foreground hover:text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Logout
