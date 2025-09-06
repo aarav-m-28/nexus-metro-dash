@@ -115,8 +115,7 @@ export default function Login() {
                 )}
               </Button>
 
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <Link to="/dashboard" className="story-link hover:text-primary transition-colors">Back to dashboard</Link>
+              <div className="flex items-center justify-center text-sm text-muted-foreground">
                 <button className="story-link hover:text-accent transition-colors">Forgot password?</button>
               </div>
             </form>
