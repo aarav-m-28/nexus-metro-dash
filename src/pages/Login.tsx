@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,14 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-import { ShieldCheck, LogIn } from "lucide-react";
+import { ShieldCheck, LogIn, UserPlus } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
     document.title = "Login | Nexus Dashboard";
@@ -37,13 +40,47 @@ export default function Login() {
     }
   }, []);
 
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/dashboard");
+    }
+  }, [user, authLoading, navigate]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Demo-only auth flow
-    await new Promise((r) => setTimeout(r, 800));
-    toast({ title: "Welcome back!", description: "You are now logged in (demo)." });
-    navigate("/dashboard");
+    
+    try {
+      const { error } = isSignUp 
+        ? await signUp(email, password)
+        : await signIn(email, password);
+        
+      if (error) {
+        toast({
+          title: "Authentication Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: isSignUp ? "Account created!" : "Welcome back!",
+          description: isSignUp 
+            ? "Please check your email to confirm your account." 
+            : "You are now logged in."
+        });
+        if (!isSignUp) {
+          navigate("/dashboard");
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,8 +110,12 @@ export default function Login() {
             <div className="mx-auto w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-accent text-primary-foreground flex items-center justify-center shadow-lg animate-scale-in hover:rotate-3 transition-all duration-300">
               <ShieldCheck className="w-7 h-7" />
             </div>
-            <CardTitle className="text-gradient bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-accent bg-clip-text text-transparent">Login to Nexus</CardTitle>
-            <CardDescription className="text-muted-foreground/80">Access your documents and workflows</CardDescription>
+            <CardTitle className="text-gradient bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-accent bg-clip-text text-transparent">
+              {isSignUp ? "Create Account" : "Login to Nexus"}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground/80">
+              {isSignUp ? "Create your account to get started" : "Access your documents and workflows"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
@@ -101,22 +142,31 @@ export default function Login() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className={cn("w-full gap-2 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 dark:from-primary dark:to-accent dark:hover:from-primary dark:hover:to-accent/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]")}> 
+              <Button type="submit" disabled={loading || authLoading} className={cn("w-full gap-2 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 dark:from-primary dark:to-accent dark:hover:from-primary dark:hover:to-accent/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]")}> 
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    <span className="animate-pulse">Signing in...</span>
+                    <span className="animate-pulse">{isSignUp ? "Creating account..." : "Signing in..."}</span>
                   </>
                 ) : (
                   <>
-                    <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    Sign in
+                    {isSignUp ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
+                    {isSignUp ? "Create Account" : "Sign in"}
                   </>
                 )}
               </Button>
 
-              <div className="flex items-center justify-center text-sm text-muted-foreground">
-                <button className="story-link hover:text-accent transition-colors">Forgot password?</button>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <button 
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="hover:text-accent transition-colors"
+                >
+                  {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
+                </button>
+                {!isSignUp && (
+                  <button className="hover:text-accent transition-colors">Forgot password?</button>
+                )}
               </div>
             </form>
           </CardContent>

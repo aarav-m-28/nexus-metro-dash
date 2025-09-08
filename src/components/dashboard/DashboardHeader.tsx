@@ -1,22 +1,30 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Upload, Bell } from "lucide-react";
+import { Search, Bell, LogOut, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { FileUploadModal } from "@/components/upload/FileUploadModal";
+import { FileUpload } from "@/components/upload/FileUpload";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function DashboardHeader() {
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
   };
 
   return (
@@ -26,7 +34,7 @@ export function DashboardHeader() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
-            Welcome back, Finance Officer
+            Welcome back, {user?.email || "User"}
           </p>
         </div>
         
@@ -39,6 +47,34 @@ export function DashboardHeader() {
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-urgent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
             </Button>
           </NotificationPanel>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="" alt={user?.email || ""} />
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.email}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -56,22 +92,9 @@ export function DashboardHeader() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-md pointer-events-none" />
           </div>
           
-          <Button 
-            type="button"
-            onClick={() => setIsUploadModalOpen(true)}
-            className="gap-2 h-11 px-6 bg-gradient-primary hover:shadow-lg text-primary-foreground font-medium transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 group relative overflow-hidden"
-          >
-            <Upload className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
-            Upload Document
-            <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-          </Button>
+          <FileUpload />
         </div>
       </form>
-
-      <FileUploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-      />
     </div>
   );
 }
