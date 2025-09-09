@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Printer, Share2, Maximize2, Search, ZoomIn, ZoomOut } from "lucide-react";
+import { Download, Printer, Share2, Maximize2, Search, ZoomIn, ZoomOut, FileText } from "lucide-react";
 import { TextTranslator } from "@/components/common/TextTranslator";
 
 interface PDFViewerProps {
@@ -11,6 +11,7 @@ interface PDFViewerProps {
   onClose: () => void;
   documentTitle: string;
   priority: "URGENT" | "HIGH" | "ROUTINE";
+  pdfUrl?: string | null;
 }
 
 // Mock PDF content for safety protocol
@@ -87,7 +88,7 @@ Last Updated: December 15, 2024
 Next Review: March 15, 2025
 `;
 
-export function PDFViewer({ isOpen, onClose, documentTitle, priority }: PDFViewerProps) {
+export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: PDFViewerProps) {
   const [zoom, setZoom] = useState(100);
   const [selectedText, setSelectedText] = useState('');
   const [translatorPosition, setTranslatorPosition] = useState({ x: 0, y: 0 });
@@ -153,21 +154,24 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority }: PDFViewe
           </DialogHeader>
 
           <ScrollArea className="flex-1 p-6">
-            <div 
-              className="bg-white border rounded-lg p-8 mx-auto shadow-sm"
-              style={{ 
-                fontSize: `${zoom}%`,
-                maxWidth: '800px',
-                fontFamily: 'Georgia, serif',
-                lineHeight: '1.6'
-              }}
-              onMouseUp={handleTextSelection}
-              onTouchEnd={handleTextSelection}
-            >
-              <pre className="whitespace-pre-wrap text-sm text-gray-800 select-text">
-                {mockPDFContent}
-              </pre>
-            </div>
+            {pdfUrl ? (
+              <iframe
+                src={pdfUrl}
+                title={documentTitle}
+                width="100%"
+                height="600px"
+                style={{ border: 0 }}
+              />
+            ) : (
+              <div className="text-center py-20">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">PDF Viewer</h3>
+                <p className="text-gray-500 mb-4">Document: {documentTitle}</p>
+                <p className="text-sm text-gray-400">
+                  PDF not available or loading...
+                </p>
+              </div>
+            )}
           </ScrollArea>
         </DialogContent>
       </Dialog>

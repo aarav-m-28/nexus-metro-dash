@@ -231,6 +231,9 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
           <div className="p-4 border-t">
             <div className="flex gap-2">
               <Input
+                id="ai-chat-input"
+                name="chat-input"
+                autoComplete="off"
                 placeholder="Ask about documents, search for files..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}

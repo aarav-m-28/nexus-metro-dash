@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Bell, LogOut, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { FileUpload } from "@/components/upload/FileUpload";
+import { FileUploadModal } from "@/components/upload/FileUploadModal";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 
 export function DashboardHeader() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
@@ -23,8 +24,29 @@ export function DashboardHeader() {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/login");
+    console.log('[DashboardHeader] logout click - current user:', user?.email);
+    try {
+      const { error } = await signOut();
+      console.log('[DashboardHeader] signOut result:', { error });
+      
+      if (error) {
+        console.warn('[DashboardHeader] logout error', error);
+      }
+
+      console.log('[DashboardHeader] logout successful, forcing page reload');
+      
+      // Clear all auth-related data
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Force complete page reload to reset all state
+      window.location.href = '/#/login';
+      
+    } catch (e) {
+      console.error('[DashboardHeader] logout unexpected error', e);
+      // Even on error, force reload to reset state
+      window.location.href = '/#/login';
+    }
   };
 
   return (
@@ -84,6 +106,9 @@ export function DashboardHeader() {
           <div className="relative flex-1 max-w-2xl group">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
             <Input
+              id="header-search"
+              name="search"
+              autoComplete="off"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search documents by keyword, title, or content..."
@@ -92,7 +117,10 @@ export function DashboardHeader() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-md pointer-events-none" />
           </div>
           
-          <FileUpload />
+          <Button type="button" onClick={() => setUploadOpen(true)} className="gap-2">
+            Upload Document
+          </Button>
+          <FileUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
         </div>
       </form>
     </div>

@@ -1,3 +1,4 @@
+import React from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DocumentList } from "@/components/dashboard/DocumentList";
@@ -5,18 +6,20 @@ import { AIChatFAB } from "@/components/ai/AIChatFAB";
 import { AnimatedBackground } from "@/components/ui/animated-background";
 
 const Index = () => {
+  console.log('[Index] Component rendering');
+  
   return (
     <>
       <AnimatedBackground />
-      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-accent/5 flex relative z-10">
+  <div className="flex h-screen min-h-screen w-screen bg-gradient-to-br from-background via-background/95 to-accent/5">
         {/* Sidebar */}
-        <DashboardSidebar />
+  { <DashboardSidebar /> }
         
         {/* Main Content */}
-        <div className="flex-1 ml-60">
+  <main className="flex-1 h-screen min-h-screen overflow-y-auto">
           <DashboardHeader />
           <DocumentList />
-        </div>
+        </main>
       </div>
       
       {/* AI Chat Assistant */}

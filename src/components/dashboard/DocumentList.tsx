@@ -2,10 +2,17 @@ import { DocumentCard } from "./DocumentCard";
 import { useDocuments } from "@/hooks/useDocuments";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Upload } from "lucide-react";
-import { FileUpload } from "@/components/upload/FileUpload";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { FileUploadModal } from "@/components/upload/FileUploadModal";
 
 export function DocumentList() {
   const { documents, loading } = useDocuments();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'sharedByMe' | 'sharedWithMe'>('all');
 
   if (loading) {
     return (
@@ -47,10 +54,24 @@ export function DocumentList() {
           <p className="text-muted-foreground mb-6 max-w-sm">
             Get started by uploading your first document to the system.
           </p>
-          <FileUpload />
+          <button type="button" onClick={() => setUploadOpen(true)} className="gap-2">
+            Upload Document
+          </button>
+          <FileUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
         </div>
       </div>
     );
+  }
+
+  // Filtering logic
+  let filteredDocs = documents;
+  if (filter === 'sharedByMe' && user) {
+    filteredDocs = documents.filter(doc => doc.user_id === user.id);
+  } else if (filter === 'sharedWithMe' && profile && profile.department) {
+    filteredDocs = documents.filter(doc => {
+      // Only show if user's department is in shared_with
+      return Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.department!);
+    });
   }
 
   return (
@@ -59,13 +80,18 @@ export function DocumentList() {
         <div>
           <h2 className="text-lg font-semibold text-foreground">Recent Documents</h2>
           <p className="text-sm text-muted-foreground">
-            {documents.length} document{documents.length !== 1 ? 's' : ''} found
+            {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''} found
           </p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setFilter('all')} className={`px-3 py-1 rounded ${filter === 'all' ? 'bg-green-600 text-white' : 'bg-muted'}`}>All</button>
+          <button onClick={() => setFilter('sharedByMe')} className={`px-3 py-1 rounded ${filter === 'sharedByMe' ? 'bg-green-600 text-white' : 'bg-muted'}`}>Shared By Me</button>
+          <button onClick={() => setFilter('sharedWithMe')} className={`px-3 py-1 rounded ${filter === 'sharedWithMe' ? 'bg-green-600 text-white' : 'bg-muted'}`}>Shared With Me</button>
         </div>
       </div>
 
       <div className="grid gap-4">
-        {documents.map((doc, index) => (
+        {filteredDocs.map((doc, index) => (
           <div 
             key={doc.id}
             className="animate-fade-in-0"
@@ -78,11 +104,12 @@ export function DocumentList() {
                 month: 'short',
                 day: 'numeric'
               })}
-              uploader="You"
-              department="Personal"
-              sharedWith={doc.is_public ? ["Public"] : ["Personal"]}
-              priority="ROUTINE"
+              uploader={doc.user_id || "You"}
+              department={doc.department || "-"}
+              sharedWith={Array.isArray(doc.shared_with) && doc.shared_with.length > 0 ? doc.shared_with : (doc.is_public ? ["Public"] : ["Personal"])}
+              priority={doc.priority as 'URGENT' | 'HIGH' | 'ROUTINE' || "ROUTINE"}
               fileType={doc.file_type?.split('/')[1]?.toUpperCase() || 'FILE'}
+              storagePath={doc.storage_path}
             />
           </div>
         ))}

@@ -17,55 +17,7 @@ interface Notification {
   actionRequired?: boolean;
 }
 
-const sampleNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "document",
-    title: "New Document Shared",
-    message: "Safety Protocol Amendment has been shared with your department",
-    timestamp: "2 minutes ago",
-    isRead: false,
-    priority: "high",
-    actionRequired: true
-  },
-  {
-    id: "2", 
-    type: "approval",
-    title: "Approval Required",
-    message: "Q4 Financial Report requires your approval before publishing",
-    timestamp: "15 minutes ago",
-    isRead: false,
-    priority: "high",
-    actionRequired: true
-  },
-  {
-    id: "3",
-    type: "system",
-    title: "System Maintenance",
-    message: "Scheduled maintenance will occur tonight from 11 PM to 2 AM",
-    timestamp: "1 hour ago",
-    isRead: false,
-    priority: "medium"
-  },
-  {
-    id: "4",
-    type: "deadline",
-    title: "Deadline Reminder",
-    message: "Budget submission deadline is approaching (Due: Dec 20)",
-    timestamp: "2 hours ago",
-    isRead: true,
-    priority: "medium"
-  },
-  {
-    id: "5",
-    type: "document",
-    title: "Document Updated",
-    message: "Infrastructure Maintenance Schedule has been updated",
-    timestamp: "3 hours ago", 
-    isRead: true,
-    priority: "low"
-  }
-];
+// No hardcoded notifications - will be fetched from Supabase
 
 const notificationIcons = {
   document: FileText,
@@ -85,7 +37,7 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ children }: NotificationPanelProps) {
-  const [notifications, setNotifications] = useState(sampleNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;

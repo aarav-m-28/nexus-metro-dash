@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FileText, Users, Calendar, User, Eye, Download, Share2, MoreHorizontal } from "lucide-react";
 import { PDFViewer } from "@/components/documents/PDFViewer";
+import { getDocumentUrl } from "@/lib/getDocumentUrl";
 import { ShareDocumentModal } from "@/components/share/ShareDocumentModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ interface DocumentCardProps {
   sharedWith: string[];
   priority: Priority;
   fileType?: string;
+  storagePath?: string | null;
 }
 
 const priorityConfig = {
@@ -43,99 +45,35 @@ export function DocumentCard({
   department,
   sharedWith,
   priority,
-  fileType = "PDF"
+  fileType = "PDF",
+  storagePath
 }: DocumentCardProps) {
   const config = priorityConfig[priority];
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
 
-  const handleViewDocument = (e: React.MouseEvent) => {
+  const handleViewDocument = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (storagePath) {
+      console.log('[DocumentCard] storagePath:', storagePath);
+      const url = await getDocumentUrl(storagePath);
+      setPdfUrl(url);
+    }
     setShowPDFViewer(true);
   };
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Create a blob with sample PDF content for demo
-    const pdfContent = `%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/Resources <<
-/Font <<
-/F1 4 0 R 
->>
->>
-/MediaBox [0 0 612 792]
-/Contents 5 0 R
->>
-endobj
-4 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Times-Roman
->>
-endobj
-5 0 obj
-<<
-/Length 44
->>
-stream
-BT
-/F1 18 Tf
-0 0 Td
-(${title}) Tj
-ET
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000274 00000 n 
-0000000358 00000 n 
-trailer
-<<
-/Size 6
-/Root 1 0 R
->>
-startxref
-456
-%%EOF`;
-
-    const blob = new Blob([pdfContent], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
+    // For now, show a message that download is not implemented
+    // In a real app, this would download from Supabase storage
     toast({
-      title: "Download started",
-      description: `${title} is being downloaded`,
+      title: "Download not available",
+      description: "File download feature will be implemented with Supabase storage",
+      variant: "destructive"
     });
   };
 
@@ -282,6 +220,7 @@ startxref
         onClose={() => setShowPDFViewer(false)}
         documentTitle={title}
         priority={priority}
+        pdfUrl={pdfUrl}
       />
 
       <ShareDocumentModal

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Upload, X, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useDocuments } from "@/hooks/useDocuments";
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -24,14 +25,22 @@ const departments = [
   "Management",
   "Human Resources"
 ];
+const ALL_DEPARTMENTS = "All Departments";
 
 const priorities = [
-  { value: "ROUTINE", label: "Routine", color: "bg-routine" },
-  { value: "HIGH", label: "High Priority", color: "bg-high" },
-  { value: "URGENT", label: "Urgent", color: "bg-urgent" }
+  { value: "ROUTINE", label: "Routine", color: "bg-blue-100 text-blue-800" },
+  { value: "HIGH", label: "High Priority", color: "bg-yellow-100 text-yellow-800" },
+  { value: "URGENT", label: "Urgent", color: "bg-red-100 text-red-800" }
+];
+
+const urgencyOptions = [
+  { value: "NORMAL", label: "Normal", color: "bg-green-100 text-green-800" },
+  { value: "URGENT", label: "Urgent", color: "bg-yellow-100 text-yellow-800" },
+  { value: "CRITICAL", label: "Critical", color: "bg-red-100 text-red-800" }
 ];
 
 export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
+  const { uploadDocument } = useDocuments();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -39,6 +48,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
     title: "",
     department: "",
     priority: "ROUTINE",
+    urgency: "NORMAL",
     description: "",
     sharedWith: [] as string[]
   });
@@ -63,6 +73,13 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
   };
 
   const handleAddDepartment = (dept: string) => {
+    if (dept === ALL_DEPARTMENTS) {
+      setFormData(prev => ({
+        ...prev,
+        sharedWith: [...departments]
+      }));
+      return;
+    }
     if (!formData.sharedWith.includes(dept)) {
       setFormData(prev => ({
         ...prev,
@@ -89,19 +106,26 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
     }
 
     setIsUploading(true);
-    
-    // Simulate upload process
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setUploadComplete(true);
-      toast({
-        title: "Upload successful",
-        description: `${selectedFile.name} has been uploaded successfully`,
-      });
-      
-      setTimeout(() => {
-        handleClose();
-      }, 1500);
+      const result = await uploadDocument(
+        selectedFile,
+        formData.title,
+        formData.description,
+        formData.department,
+        formData.priority,
+        formData.urgency,
+        formData.sharedWith
+      );
+      if (result) {
+        setUploadComplete(true);
+        toast({
+          title: "Upload successful",
+          description: `${selectedFile.name} has been uploaded successfully`,
+        });
+        setTimeout(() => {
+          handleClose();
+        }, 1500);
+      }
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -121,6 +145,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
       title: "",
       department: "",
       priority: "ROUTINE",
+      urgency: "NORMAL",
       description: "",
       sharedWith: []
     });
@@ -205,9 +230,11 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
               <Label htmlFor="title">Document Title *</Label>
               <Input
                 id="title"
+                name="title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Enter document title"
+                autoComplete="off"
               />
             </div>
 
@@ -249,6 +276,28 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="urgency">Urgency Status</Label>
+              <Select
+                value={formData.urgency}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, urgency: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {urgencyOptions.map((urgency) => (
+                    <SelectItem key={urgency.value} value={urgency.value}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${urgency.color}`} />
+                        {urgency.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Description */}
@@ -271,6 +320,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
                 <SelectValue placeholder="Add departments to share with" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem key={ALL_DEPARTMENTS} value={ALL_DEPARTMENTS}>{ALL_DEPARTMENTS}</SelectItem>
                 {departments
                   .filter(dept => !formData.sharedWith.includes(dept))
                   .map((dept) => (

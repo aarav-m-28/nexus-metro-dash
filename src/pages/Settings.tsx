@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Drawer, DrawerTrigger, DrawerContent } from "@/components/ui/drawer";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,10 +109,22 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <DashboardSidebar />
-      
-      <div className="flex-1 ml-60">
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar: sliding on mobile, fixed on desktop */}
+      <div className="block md:hidden">
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button variant="outline" className="m-4">Open Sidebar</Button>
+          </DrawerTrigger>
+          <DrawerContent className="max-w-xs w-full">
+            <DashboardSidebar />
+          </DrawerContent>
+        </Drawer>
+      </div>
+      <div className="hidden md:block">
+        <DashboardSidebar />
+      </div>
+      <main className="flex-1 overflow-y-auto">
         {/* Settings Header */}
         <div className="bg-card border-b border-border/50 p-6">
           <div className="flex items-center justify-between">
@@ -130,7 +143,7 @@ export default function Settings() {
         </div>
 
         {/* Settings Content */}
-        <div className="p-6 max-w-4xl">
+        <div className="p-6 w-full max-w-4xl mx-auto">
           <div className="space-y-8">
             
             {/* Profile Settings */}
@@ -438,7 +451,7 @@ export default function Settings() {
 
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -14,6 +14,11 @@ export interface Document {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  user_id?: string;
+  department?: string;
+  priority?: string;
+  urgency?: string;
+  shared_with?: string[];
 }
 
 export function useDocuments() {
@@ -50,27 +55,40 @@ export function useDocuments() {
     fetchDocuments();
   }, [user]);
 
-  const uploadDocument = async (file: File, title: string, description?: string) => {
+  // Accepts extra metadata fields
+  const uploadDocument = async (
+    file: File,
+    title: string,
+    description?: string,
+    department?: string,
+    priority?: string,
+    urgency?: string,
+    sharedWith?: string[]
+  ) => {
     if (!user) return null;
 
     try {
       // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-      
+  const fileExt = file.name.split('.').pop();
+  const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Create document record
+      // Create document record with extra fields
       const { data, error: insertError } = await supabase
         .from('documents')
         .insert({
           user_id: user.id,
           title: title || file.name,
           description,
+          department,
+          priority,
+          urgency,
+          shared_with: sharedWith,
           file_name: file.name,
           file_size: file.size,
           file_type: file.type,

@@ -218,6 +218,9 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
               <Label>Email Addresses</Label>
               <div className="flex gap-2">
                 <Input
+                  id="share-email-input"
+                  name="email"
+                  autoComplete="email"
                   placeholder="Enter email address"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
