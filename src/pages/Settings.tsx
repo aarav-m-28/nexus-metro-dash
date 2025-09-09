@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,19 +8,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   User, 
   Bell, 
   Shield, 
   Database, 
-  Palette, 
-  Globe,
   Save,
-  RefreshCw
+  RefreshCw,
+  Key
 } from "lucide-react";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { profile, loading, updateProfile, changePassword } = useProfile();
+  
+  const [profileForm, setProfileForm] = useState({
+    display_name: '',
+    department: '',
+    job_title: '',
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: '',
+    confirmPassword: '',
+  });
+
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -39,7 +54,53 @@ export default function Settings() {
     }
   });
 
-  const handleSave = () => {
+  // Update form when profile loads
+  useEffect(() => {
+    if (profile) {
+      setProfileForm({
+        display_name: profile.display_name || '',
+        department: profile.department || '',
+        job_title: profile.job_title || '',
+      });
+    }
+  }, [profile]);
+
+  const handleProfileSave = async () => {
+    const success = await updateProfile(profileForm);
+    if (success) {
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const success = await changePassword(passwordForm.newPassword);
+    if (success) {
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+    }
+  };
+
+  const handleSettingsSave = () => {
     toast({
       title: "Settings saved",
       description: "Your preferences have been updated successfully.",
@@ -61,9 +122,9 @@ export default function Settings() {
               </p>
             </div>
             
-            <Button onClick={handleSave} className="gap-2">
+            <Button onClick={handleSettingsSave} className="gap-2">
               <Save className="w-4 h-4" />
-              Save Changes
+              Save Preferences
             </Button>
           </div>
         </div>
@@ -81,24 +142,100 @@ export default function Settings() {
                   <CardDescription>Update your personal details and role</CardDescription>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" defaultValue="Finance Officer" />
+                    <Label htmlFor="display_name">Full Name</Label>
+                    <Input 
+                      id="display_name" 
+                      value={profileForm.display_name}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, display_name: e.target.value }))}
+                      placeholder="Enter your full name"
+                      disabled={loading}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" defaultValue="finance@kmrl.co.in" />
+                    <Input 
+                      id="email" 
+                      value={user?.email || ''} 
+                      disabled 
+                      className="bg-muted"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
-                    <Input id="department" defaultValue="Finance Department" />
+                    <Input 
+                      id="department" 
+                      value={profileForm.department}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, department: e.target.value }))}
+                      placeholder="Enter your department"
+                      disabled={loading}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Input id="role" defaultValue="Senior Finance Officer" />
+                    <Label htmlFor="job_title">Job Title</Label>
+                    <Input 
+                      id="job_title" 
+                      value={profileForm.job_title}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, job_title: e.target.value }))}
+                      placeholder="Enter your job title"
+                      disabled={loading}
+                    />
                   </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button onClick={handleProfileSave} disabled={loading} className="gap-2">
+                    <Save className="w-4 h-4" />
+                    Save Profile
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Password Settings */}
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <Key className="w-5 h-5 text-primary" />
+                <div>
+                  <CardTitle>Change Password</CardTitle>
+                  <CardDescription>Update your account password</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input 
+                      id="new-password" 
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Input 
+                      id="confirm-password" 
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handlePasswordChange} 
+                    disabled={!passwordForm.newPassword || !passwordForm.confirmPassword}
+                    className="gap-2"
+                  >
+                    <Key className="w-4 h-4" />
+                    Change Password
+                  </Button>
                 </div>
               </CardContent>
             </Card>
