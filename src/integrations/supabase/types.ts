@@ -92,6 +92,63 @@ export type Database = {
         }
         Relationships: []
       }
+      sample_departments: {
+        Row: {
+          department: string
+          id: number
+          job_titles: string[]
+        }
+        Insert: {
+          department: string
+          id?: number
+          job_titles: string[]
+        }
+        Update: {
+          department?: string
+          id?: number
+          job_titles?: string[]
+        }
+        Relationships: []
+      }
+      sample_documents: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          description: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          is_public: boolean | null
+          job_title: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_public?: boolean | null
+          job_title?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_public?: boolean | null
+          job_title?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
