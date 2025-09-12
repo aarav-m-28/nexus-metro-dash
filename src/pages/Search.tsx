@@ -1,60 +1,57 @@
 import { useState, useMemo, useEffect } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
-import { Drawer, DrawerTrigger, DrawerContent } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DocumentCard } from "@/components/dashboard/DocumentCard";
 import { Card } from "@/components/ui/card";
 import { Search as SearchIcon, Filter, SortAsc, X, Clock, FileText, Users, Building } from "lucide-react";
+import {
+  Sidebar,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { Document, useDocuments } from "@/hooks/useDocuments";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { EditDocumentModal } from "@/components/documents/EditDocumentModal";
 
 // No hardcoded documents - all data comes from Supabase
 
 export default function Search() {
+  const { documents, loading, deleteDocument, updateDocument } = useDocuments();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<string>("date");
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [recentSearches] = useState<string[]>([]);
+  const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const { profile } = useProfile();
   const { user } = useAuth();
-
-  // Fetch documents from Supabase
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!user) return;
-      
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('documents')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching documents:', error);
-          setDocuments([]);
-        } else {
-          setDocuments(data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching documents:', error);
-        setDocuments([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDocuments();
-  }, [user]);
 
   // Enhanced search with multiple filters
   const filteredDocs = useMemo(() => {
-    let filtered = documents;
+    // Start with documents visible to the user: either they created them, they are public, or they are shared with the user's department.
+    let filtered = documents.filter(doc => {
+      const isOwner = doc.user_id === user?.id;
+      const isPublic = doc.is_public === true;
+      const isSharedWithUserDept = profile?.department && Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.department);
+      
+      return isOwner || isPublic || isSharedWithUserDept;
+    });
 
     // Text search
     if (searchQuery.trim()) {
@@ -75,8 +72,8 @@ export default function Search() {
     // Department filter (if documents have department field)
     if (selectedDepartment !== "ALL") {
       filtered = filtered.filter(doc => 
-        doc.department?.toLowerCase().includes(selectedDepartment.toLowerCase()) ||
-        doc.sharedWith?.some(dept => dept.toLowerCase().includes(selectedDepartment.toLowerCase()))
+        (doc.department?.toLowerCase() === selectedDepartment.toLowerCase()) ||
+        (Array.isArray(doc.shared_with) && doc.shared_with.some(dept => dept.toLowerCase() === selectedDepartment.toLowerCase()))
       );
     }
 
@@ -95,7 +92,7 @@ export default function Search() {
     });
 
     return filtered;
-  }, [documents, searchQuery, selectedPriority, selectedDepartment, sortBy]);
+  }, [documents, searchQuery, selectedPriority, selectedDepartment, sortBy, user, profile]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -121,26 +118,21 @@ export default function Search() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sliding Sidebar for Search */}
-      <div className="block md:hidden">
-        <Drawer>
-          <DrawerTrigger asChild>
-            <Button variant="outline" className="m-4">Open Sidebar</Button>
-          </DrawerTrigger>
-          <DrawerContent className="max-w-xs w-full">
-            <DashboardSidebar />
-          </DrawerContent>
-        </Drawer>
-      </div>
-      <div className="hidden md:block">
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
         <DashboardSidebar />
-      </div>
-      <main className="flex-1 overflow-y-auto">
+      </Sidebar>
+      <SidebarInset>
+        
         {/* Enhanced Search Header */}
         <div className="bg-gradient-to-r from-card to-card/80 border-b border-border/50 p-6">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Advanced Search</h1>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="md:hidden">
+                <SidebarTrigger />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground">Advanced Search</h1>
+            </div>
             <p className="text-sm text-muted-foreground">
               Intelligent search through {documents.length} documents across all departments
             </p>
@@ -302,13 +294,18 @@ export default function Search() {
                 {filteredDocs.map((doc, index) => (
                   <div key={doc.id || index} className="animate-in fade-in-0 slide-in-from-bottom-4 duration-300" style={{animationDelay: `${index * 100}ms`}}>
                     <DocumentCard
+                      id={doc.id}
                       title={doc.title || doc.file_name || "Untitled"}
                       uploadDate={doc.created_at ? new Date(doc.created_at).toLocaleDateString() : "Unknown"}
                       uploader={doc.uploader || "Unknown"}
                       department={doc.department || "Unknown"}
-                      sharedWith={doc.sharedWith || []}
+                      sharedWith={Array.isArray(doc.shared_with) && doc.shared_with.length > 0 ? doc.shared_with : (doc.is_public ? ["Public"] : ["Personal"])}
                       priority={doc.priority || "ROUTINE"}
                       fileType={doc.file_type || "Unknown"}
+                      storagePath={doc.storage_path}
+                      isOwner={doc.user_id === user?.id}
+                      onEdit={() => setEditingDocument(doc)}
+                      onDelete={() => setDeletingDocument(doc)}
                     />
                   </div>
                 ))}
@@ -336,7 +333,36 @@ export default function Search() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </SidebarInset>
+      <EditDocumentModal
+        isOpen={!!editingDocument}
+        onClose={() => setEditingDocument(null)}
+        document={editingDocument}
+        onUpdate={(id, updates, file, remove) =>
+          updateDocument(id, updates, file, remove)
+        }
+      />
+      <AlertDialog
+        open={!!deletingDocument}
+        onOpenChange={(open) => !open && setDeletingDocument(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              document "{deletingDocument?.title}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (deletingDocument) deleteDocument(deletingDocument.id, deletingDocument.storage_path);
+              setDeletingDocument(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </SidebarProvider>
   );
 }

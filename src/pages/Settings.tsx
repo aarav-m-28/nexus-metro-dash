@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
-import { Drawer, DrawerTrigger, DrawerContent } from "@/components/ui/drawer";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -109,26 +114,18 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar: sliding on mobile, fixed on desktop */}
-      <div className="block md:hidden">
-        <Drawer>
-          <DrawerTrigger asChild>
-            <Button variant="outline" className="m-4">Open Sidebar</Button>
-          </DrawerTrigger>
-          <DrawerContent className="max-w-xs w-full">
-            <DashboardSidebar />
-          </DrawerContent>
-        </Drawer>
-      </div>
-      <div className="hidden md:block">
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
         <DashboardSidebar />
-      </div>
-      <main className="flex-1 overflow-y-auto">
+      </Sidebar>
+      <SidebarInset>
         {/* Settings Header */}
         <div className="bg-card border-b border-border/50 p-6">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex items-center gap-4">
+              <div className="md:hidden">
+                <SidebarTrigger />
+              </div>
               <h1 className="text-2xl font-bold text-foreground">Settings</h1>
               <p className="text-sm text-muted-foreground">
                 Manage your account preferences and system configuration
@@ -451,7 +448,7 @@ export default function Settings() {
 
           </div>
         </div>
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

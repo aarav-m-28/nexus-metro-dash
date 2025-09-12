@@ -8,6 +8,7 @@ import { NotificationPanel } from "@/components/notifications/NotificationPanel"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function DashboardHeader() {
@@ -53,7 +54,10 @@ export function DashboardHeader() {
     <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 p-6 animate-fade-in-0 sticky top-0 z-10">
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="flex items-center gap-4">
+          <div className="md:hidden">
+            <SidebarTrigger />
+          </div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Welcome back, {user?.email || "User"}

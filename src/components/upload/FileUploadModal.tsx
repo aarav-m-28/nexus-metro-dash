@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; 
+import { Switch } from "@/components/ui/switch";
 import { Upload, X, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDocuments } from "@/hooks/useDocuments";
@@ -33,43 +34,52 @@ const priorities = [
   { value: "URGENT", label: "Urgent", color: "bg-red-100 text-red-800" }
 ];
 
-const urgencyOptions = [
-  { value: "NORMAL", label: "Normal", color: "bg-green-100 text-green-800" },
-  { value: "URGENT", label: "Urgent", color: "bg-yellow-100 text-yellow-800" },
-  { value: "CRITICAL", label: "Critical", color: "bg-red-100 text-red-800" }
-];
-
 export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
   const { uploadDocument } = useDocuments();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isNoFile, setIsNoFile] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     department: "",
     priority: "ROUTINE",
-    urgency: "NORMAL",
     description: "",
-    sharedWith: [] as string[]
+    sharedWith: [] as string[],
+    is_public: false,
   });
   const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        toast({
-          title: "File too large",
-          description: "Please select a file smaller than 10MB",
-          variant: "destructive"
-        });
-        return;
-      }
-      setSelectedFile(file);
-      if (!formData.title) {
-        setFormData(prev => ({ ...prev, title: file.name.replace(/\.[^/.]+$/, "") }));
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    if (files.length > 0) {
+      const newFiles = files.filter(file => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          toast({
+            title: "File too large",
+            description: `${file.name} is larger than 10MB and was not added.`,
+            variant: "destructive"
+          });
+          return false;
+        }
+        return true;
+      });
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      if (newFiles.length === 1 && !formData.title) {
+        setFormData(prev => ({ ...prev, title: newFiles[0].name.replace(/\.[^/.]+$/, "") }));
       }
     }
+  };
+
+  const handleNoFileChange = (checked: boolean) => {
+    setIsNoFile(checked);
+    if (checked) {
+      setSelectedFiles([]);
+    }
+  };
+
+  const handleRemoveFile = (fileToRemove: File) => {
+    setSelectedFiles(prev => prev.filter(file => file !== fileToRemove));
   };
 
   const handleAddDepartment = (dept: string) => {
@@ -96,10 +106,10 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !formData.title || !formData.department) {
+    if (!formData.title || !formData.department) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please provide a title and select a department.",
         variant: "destructive"
       });
       return;
@@ -107,29 +117,58 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
 
     setIsUploading(true);
     try {
-      const result = await uploadDocument(
-        selectedFile,
-        formData.title,
-        formData.description,
-        formData.department,
-        formData.priority,
-        formData.urgency,
-        formData.sharedWith
+      const uploadPromises = selectedFiles.map(file => 
+        uploadDocument(
+          file,
+          formData.title || file.name.replace(/\.[^/.]+$/, ""), // Use batch title or file name
+          formData.description,
+          formData.department,
+          formData.priority,
+          formData.sharedWith,
+          formData.is_public
+        )
       );
-      if (result) {
+
+      if (selectedFiles.length === 0) {
+        uploadPromises.push(
+          uploadDocument(
+            null,
+            formData.title,
+            formData.description,
+            formData.department,
+            formData.priority,
+            formData.sharedWith,
+            formData.is_public
+          )
+        );
+      }
+
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter(r => r).length;
+      const totalToUpload = selectedFiles.length > 0 ? selectedFiles.length : 1;
+
+      if (successfulUploads > 0) {
         setUploadComplete(true);
         toast({
           title: "Upload successful",
-          description: `${selectedFile.name} has been uploaded successfully`,
+          description: `${successfulUploads} of ${totalToUpload} document(s) created.`,
         });
         setTimeout(() => {
           handleClose();
         }, 1500);
       }
+
+      if (successfulUploads < selectedFiles.length) {
+        toast({
+          title: "Some uploads failed",
+          description: "Please check the console for more details.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your file",
+        description: "There was an error uploading your files.",
         variant: "destructive"
       });
     } finally {
@@ -138,16 +177,16 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
   };
 
   const handleClose = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setIsUploading(false);
     setUploadComplete(false);
     setFormData({
       title: "",
       department: "",
       priority: "ROUTINE",
-      urgency: "NORMAL",
       description: "",
-      sharedWith: []
+      sharedWith: [],
+      is_public: false,
     });
     onClose();
   };
@@ -157,9 +196,9 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="max-w-md">
           <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Upload Successful!</h3>
-            <p className="text-muted-foreground">Your document has been uploaded and shared with the selected departments.</p>
+            <p className="text-muted-foreground">Your document(s) have been uploaded.</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -172,70 +211,86 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
-            Upload New Document
+            Upload New Document(s)
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* File Upload Area */}
-          <div className="space-y-2">
-            <Label htmlFor="file-upload">Select File *</Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-              {selectedFile ? (
-                <div className="flex items-center justify-center gap-3">
-                  <FileText className="w-8 h-8 text-primary" />
-                  <div className="text-left">
-                    <p className="font-medium">{selectedFile.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedFile(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium mb-2">Drop your file here or click to browse</p>
-                  <p className="text-sm text-muted-foreground">Supports PDF, DOCX, XLSX files up to 10MB</p>
-                </div>
-              )}
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                accept=".pdf,.docx,.xlsx,.doc,.xls"
-                onChange={handleFileSelect}
-              />
-              {!selectedFile && (
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                >
-                  Choose File
-                </Button>
-              )}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="file-upload">File Attachment</Label>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="no-file-checkbox" checked={isNoFile} onChange={(e) => handleNoFileChange(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                <Label htmlFor="no-file-checkbox" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Create without a file
+                </Label>
+              </div>
             </div>
+            {!isNoFile && (
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                {selectedFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between gap-3 bg-muted p-2 rounded-md">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-6 h-6 text-primary" />
+                          <div className="text-left">
+                            <p className="font-medium text-sm">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(file)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                     <Button
+                      variant="outline"
+                      className="mt-4 w-full"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                    >
+                      Add more files...
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="cursor-pointer" onClick={() => document.getElementById('file-upload')?.click()}>
+                    <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-medium mb-2">Drop your files here or click to browse</p>
+                    <p className="text-sm text-muted-foreground">Supports PDF, DOCX, XLSX files up to 10MB</p>
+                  </div>
+                )}
+                <input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept=".pdf,.docx,.xlsx,.doc,.xls"
+                  onChange={handleFileSelect}
+                />
+              </div>
+            )}
           </div>
 
           {/* Document Details */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="title">Document Title *</Label>
+            <div className="col-span-2 space-y-2"> 
+              <Label htmlFor="title">Batch Title (Optional)</Label>
               <Input
                 id="title"
                 name="title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Enter document title"
+                placeholder="e.g., Q2 Financial Reports"
                 autoComplete="off"
               />
+              <p className="text-xs text-muted-foreground">Title is required. If uploading files, this can be a batch title, otherwise filenames will be used.</p>
             </div>
 
             <div className="space-y-2">
@@ -276,28 +331,6 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="urgency">Urgency Status</Label>
-              <Select
-                value={formData.urgency}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, urgency: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {urgencyOptions.map((urgency) => (
-                    <SelectItem key={urgency.value} value={urgency.value}>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${urgency.color}`} />
-                        {urgency.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Description */}
@@ -307,45 +340,71 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
               id="description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Add a brief description of the document"
+              placeholder="Add a brief description for all documents in this batch"
               rows={3}
             />
           </div>
 
           {/* Share With */}
-          <div className="space-y-3">
-            <Label>Share with Departments</Label>
-            <Select onValueChange={handleAddDepartment}>
-              <SelectTrigger>
-                <SelectValue placeholder="Add departments to share with" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem key={ALL_DEPARTMENTS} value={ALL_DEPARTMENTS}>{ALL_DEPARTMENTS}</SelectItem>
-                {departments
-                  .filter(dept => !formData.sharedWith.includes(dept))
-                  .map((dept) => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+          {!formData.is_public && (
+            <div className="space-y-3">
+              <Label>Share with Departments</Label>
+              <Select onValueChange={handleAddDepartment}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Add departments to share with" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem key={ALL_DEPARTMENTS} value={ALL_DEPARTMENTS}>{ALL_DEPARTMENTS}</SelectItem>
+                  {departments
+                    .filter(dept => !formData.sharedWith.includes(dept))
+                    .map((dept) => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              
+              {formData.sharedWith.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.sharedWith.map((dept) => (
+                    <Badge key={dept} variant="secondary" className="gap-1">
+                      {dept}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => handleRemoveDepartment(dept)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
                   ))}
-              </SelectContent>
-            </Select>
-            
-            {formData.sharedWith.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.sharedWith.map((dept) => (
-                  <Badge key={dept} variant="secondary" className="gap-1">
-                    {dept}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                      onClick={() => handleRemoveDepartment(dept)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </Badge>
-                ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Visibility Settings */}
+          <div className="space-y-3">
+            <Label>Visibility</Label>
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div>
+                <Label htmlFor="is-public-switch">Make Public</Label>
+                <p className="text-xs text-muted-foreground">
+                  Anyone in the organization can find and view this document.
+                </p>
               </div>
-            )}
+              <Switch
+                id="is-public-switch"
+                checked={formData.is_public}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setFormData(prev => ({ ...prev, is_public: checked, sharedWith: [] }));
+                  } else {
+                    setFormData(prev => ({ ...prev, is_public: checked }));
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -354,7 +413,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
           <Button variant="outline" onClick={handleClose} disabled={isUploading}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} disabled={isUploading} className="gap-2">
+          <Button onClick={handleUpload} disabled={isUploading || !formData.title || !formData.department} className="gap-2">
             {isUploading ? (
               <>
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -363,7 +422,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Upload Document
+                Upload {selectedFiles.length > 0 ? selectedFiles.length : ''} Document{selectedFiles.length !== 1 ? 's' : ''}
               </>
             )}
           </Button>

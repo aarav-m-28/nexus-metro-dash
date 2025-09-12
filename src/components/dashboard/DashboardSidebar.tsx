@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +27,6 @@ import {
   Database,
   RefreshCw,
   ChevronRight,
-  Zap,
   Shield
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -34,7 +43,7 @@ const sidebarItems = [
     title: "Search",
     icon: Search,
     path: "/search",
-    badge: "New"
+    badge: null
   },
   {
     title: "Settings",
@@ -59,6 +68,7 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, clearAndRecreateProfile } = useProfile();
+  const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   console.log('[DashboardSidebar] Hooks initialized:', { 
@@ -245,118 +255,74 @@ export function DashboardSidebar() {
   const userInfo = getUserDisplayInfo();
 
   return (
-    <div 
-      className="w-80 h-screen min-h-screen border-r border-slate-200 flex flex-col flex-shrink-0 relative z-10 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800"
-      style={{ 
-        position: 'relative',
-        zIndex: 10,
-        width: '320px'
-      }}
-    >
-      {/* Header */}
-  <div className="p-6 border-b border-slate-200 bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Building2 className="h-7 w-7 text-white" />
+    <>
+      <SidebarHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+              <Building2 className="h-5 w-5 text-white" />
             </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm"></div>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300 dark:bg-gradient-to-r dark:text-transparent">
+            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
               Nexus Metro
-            </h1>
-            <p className="text-sm text-slate-500 font-medium">Document Intelligence</p>
+            </span>
           </div>
+          <SidebarTrigger className="hidden md:flex" />
         </div>
-        
-        {/* Status Bar */}
-        <div className="mt-4 flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-200">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span className="text-xs font-medium text-emerald-700">Online</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
-            <Shield className="w-3 h-3 text-blue-600" />
-            <span className="text-xs font-medium text-blue-700">Secure</span>
-          </div>
-        </div>
-      </div>
+      </SidebarHeader>
 
-      {/* Sidebar Search */}
-      <form onSubmit={handleSidebarSearch} className="px-4 pt-4 pb-2">
-        <Input
-          type="text"
-          placeholder="Search documents..."
-          value={sidebarSearch}
-          onChange={e => setSidebarSearch(e.target.value)}
-          className="h-10 text-sm bg-background/80 border border-border/50 focus:border-primary/50 transition-all duration-200 dark:bg-slate-900 dark:text-slate-100"
-        />
-      </form>
-      {/* Navigation */}
-  <nav className="flex-1 p-4">
-        <div className="space-y-1">
-        {sidebarItems.map((item) => (
-          <NavLink
-              key={item.path}
-            to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative",
-                  isActive
-                    ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border border-indigo-200 shadow-sm dark:bg-gradient-to-r dark:from-indigo-900 dark:to-purple-900 dark:text-indigo-200 dark:border-indigo-700"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200",
-              isActive
-                        ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md" 
-                        : "bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700"
-                    )}>
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium text-slate-800 dark:text-slate-100">{item.title}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
+      <SidebarContent>
+        <form onSubmit={handleSidebarSearch} className="relative mb-2">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search..."
+            value={sidebarSearch}
+            onChange={(e) => setSidebarSearch(e.target.value)}
+            className="h-9 pl-8"
+          />
+        </form>
+
+        <SidebarMenu>
+          {sidebarItems.map((item) => (
+            <SidebarMenuItem key={item.path}>
+              <NavLink to={item.path} className="w-full">
+                {({ isActive }) => (
+                  <SidebarMenuButton
+                    isActive={isActive}
+                    tooltip={{ children: item.title, side: "right" }}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
                     {item.badge && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full">
-                        {item.badge}
+                      <span className="ml-auto group-data-[collapsible=icon]:hidden">
+                        <div className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full">
+                          {item.badge}
+                        </div>
                       </span>
                     )}
-                    {isActive && (
-                      <ChevronRight className="h-4 w-4 text-indigo-500" />
-                    )}
-                  </div>
-                  
-                  {/* Active indicator */}
-                  {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-r-full"></div>
-                  )}
-                </>
-              )}
-          </NavLink>
-        ))}
-        </div>
-      </nav>
+                  </SidebarMenuButton>
+                )}
+              </NavLink>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
 
-      {/* User Profile */}
-  <div className="p-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-        <div className="flex items-center gap-3 mb-4">
+      <SidebarFooter>
+        <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-slate-400 to-slate-600 rounded-2xl flex items-center justify-center shadow-md">
-              <span className="text-lg font-bold text-white">
+            <div className="w-10 h-10 bg-gradient-to-br from-slate-400 to-slate-600 rounded-full flex items-center justify-center shadow-md">
+              <span className="text-md font-bold text-white">
                 {userInfo.initial}
               </span>
             </div>
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm"></div>
           </div>
-          <div className="flex-1 min-w-0">
+          <div
+            className={cn(
+              "flex-1 min-w-0 group-data-[collapsible=icon]:hidden",
+              { "hidden": sidebarState === "collapsed" }
+            )}
+          >
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
               {userInfo.name}
             </p>
@@ -365,27 +331,31 @@ export function DashboardSidebar() {
             </p>
           </div>
         </div>
-        
-        {/* Action Buttons */}
-        <div className="space-y-2">
-          {/* Debug Database and Clear Profile buttons removed */}
-        
-    <Button 
-      variant="outline" 
-      size="sm" 
-      onClick={handleLogout}
-      disabled={isLoggingOut}
-      className="w-full justify-start gap-2 text-xs h-8 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-red-400 dark:text-red-300 dark:hover:border-red-500 dark:hover:bg-red-900 dark:hover:text-red-200"
-    >
-            {isLoggingOut ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <LogOut className="h-3 w-3" />
-            )}
-            {isLoggingOut ? "Signing out..." : "Sign Out"}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full justify-center text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/50 dark:hover:text-red-300"
+          aria-label="Sign Out"
+        >
+          {sidebarState === "expanded" ? (
+            <div className="flex w-full items-center justify-between px-2">
+              <span>{isLoggingOut ? "Signing out..." : "Sign Out"}</span>
+              {isLoggingOut ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
+            </div>
+          ) : isLoggingOut ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="h-4 w-4" />
+          )}
         </Button>
-        </div>
-      </div>
-    </div>
+      </SidebarFooter>
+    </>
   );
 }

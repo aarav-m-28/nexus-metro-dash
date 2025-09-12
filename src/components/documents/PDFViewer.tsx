@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Printer, Share2, Maximize2, Search, ZoomIn, ZoomOut, FileText } from "lucide-react";
-import { TextTranslator } from "@/components/common/TextTranslator";
+import { ShareDocumentModal } from "@/components/share/ShareDocumentModal";
 
 
 interface PDFViewerProps {
@@ -14,6 +14,7 @@ interface PDFViewerProps {
   priority: "URGENT" | "HIGH" | "ROUTINE";
   pdfUrl?: string | null;
 };
+
 export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: PDFViewerProps) {
   useEffect(() => {
     if (!isOpen) return;
@@ -26,6 +27,7 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
   const [showShareModal, setShowShareModal] = useState(false);
+  const viewerContainerRef = useRef<HTMLDivElement>(null);
 
   // Download PDF
   const handleDownload = () => {
@@ -49,11 +51,6 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: 
     }
   };
   const [zoom, setZoom] = useState(100);
-  const [selectedText, setSelectedText] = useState('');
-  const [translatorPosition, setTranslatorPosition] = useState({ x: 0, y: 0 });
-  const [showTranslator, setShowTranslator] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const viewerContainerRef = useRef<HTMLDivElement>(null);
 
   // Share PDF
   const handleShare = () => {
@@ -129,9 +126,8 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: 
                     height: '600px',
                     background: '#111',
                   }}
-                >
+                > 
                   <iframe
-                    ref={iframeRef}
                     src={pdfUrl}
                     title={documentTitle}
                     width="100%"
@@ -152,20 +148,11 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: 
             </ScrollArea>
           </DialogContent>
       </Dialog>
-      {/* Share Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Reuse your ShareDocumentModal here if needed */}
-        </div>
-      )}
-
-      {showTranslator && selectedText && (
-        <TextTranslator
-          selectedText={selectedText}
-          position={translatorPosition}
-          onClose={() => setShowTranslator(false)}
-        />
-      )}
+      <ShareDocumentModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        documentTitle={documentTitle}
+      />
     </>
   );
 }

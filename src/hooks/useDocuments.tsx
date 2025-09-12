@@ -17,9 +17,19 @@ export interface Document {
   user_id?: string;
   department?: string;
   priority?: string;
-  urgency?: string;
   shared_with?: string[];
 }
+
+export type DocumentUpdatePayload = Partial<
+  Pick<
+    Document,
+    | "title"
+    | "description"
+    | "department"
+    | "priority"
+    | "shared_with"
+  >
+>;
 
 export function useDocuments() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -57,42 +67,52 @@ export function useDocuments() {
 
   // Accepts extra metadata fields
   const uploadDocument = async (
-    file: File,
+    file: File | null,
     title: string,
     description?: string,
     department?: string,
     priority?: string,
-    urgency?: string,
-    sharedWith?: string[]
+    sharedWith?: string[],
+    is_public?: boolean
   ) => {
     if (!user) return null;
 
     try {
-      // Upload file to storage
-  const fileExt = file.name.split('.').pop();
-  const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      let filePath = null;
+      let fileName = null;
+      let fileSize = null;
+      let fileType = null;
 
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
+      if (file) {
+        // Upload file to storage
+        const fileExt = file.name.split('.').pop();
+        filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        fileName = file.name;
+        fileSize = file.size;
+        fileType = file.type;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+      }
 
       // Create document record with extra fields
       const { data, error: insertError } = await supabase
         .from('documents')
         .insert({
           user_id: user.id,
-          title: title || file.name,
+          title: title,
           description,
           department,
           priority,
-          urgency,
-          shared_with: sharedWith,
-          file_name: file.name,
-          file_size: file.size,
-          file_type: file.type,
-          storage_path: filePath,
+          shared_with: sharedWith, 
+          file_name: fileName,
+          file_size: fileSize,
+          file_type: fileType,
+          storage_path: filePath, 
+          is_public: is_public || false,
         })
         .select()
         .single();
@@ -105,7 +125,7 @@ export function useDocuments() {
       });
 
       fetchDocuments();
-      return data;
+      return true;
     } catch (error) {
       console.error('Error uploading document:', error);
       toast({
@@ -113,7 +133,88 @@ export function useDocuments() {
         description: "Failed to upload document",
         variant: "destructive"
       });
-      return null;
+      return false;
+    }
+  };
+
+  const updateDocument = async (
+    documentId: string,
+    updates: DocumentUpdatePayload,
+    newFile?: File | null,
+    removeFile?: boolean
+  ) => {
+    if (!user) return false;
+
+    try {
+      let finalUpdates: Partial<Document> = { ...updates };
+
+      // If a new file is provided, handle file replacement
+      if (newFile) {
+        // 1. Get the old file path to delete it later
+        const { data: currentDoc } = await supabase
+          .from("documents")
+          .select("storage_path")
+          .eq("id", documentId)
+          .single();
+
+        // 2. Upload the new file
+        const fileExt = newFile.name.split(".").pop();
+        const newFilePath = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(newFilePath, newFile);
+        if (uploadError) throw uploadError;
+
+        // 3. Add new file info to the updates
+        finalUpdates = {
+          ...finalUpdates,
+          storage_path: newFilePath,
+          file_name: newFile.name,
+          file_size: newFile.size,
+          file_type: newFile.type,
+        };
+
+        // 4. Delete the old file from storage
+        if (currentDoc?.storage_path) {
+          await supabase.storage.from("documents").remove([currentDoc.storage_path]);
+        }
+      } else if (removeFile) {
+        // Handle file removal
+        const { data: currentDoc } = await supabase
+          .from("documents")
+          .select("storage_path")
+          .eq("id", documentId)
+          .single();
+
+        if (currentDoc?.storage_path) {
+          await supabase.storage.from("documents").remove([currentDoc.storage_path]);
+        }
+
+        finalUpdates = { ...finalUpdates, storage_path: null, file_name: null, file_size: null, file_type: null };
+      }
+
+      const { error } = await supabase
+        .from("documents")
+        .update(finalUpdates)
+        .eq("id", documentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Document updated successfully",
+      });
+
+      fetchDocuments(); // Refetch to show updated data
+      return true;
+    } catch (error) {
+      console.error("Error updating document:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update document",
+        variant: "destructive",
+      });
+      return false;
     }
   };
 
@@ -156,6 +257,7 @@ export function useDocuments() {
     documents,
     loading,
     uploadDocument,
+    updateDocument,
     deleteDocument,
     refetch: fetchDocuments,
   };

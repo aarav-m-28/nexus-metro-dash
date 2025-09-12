@@ -3,7 +3,18 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { FileText, Users, Calendar, User, Eye, Download, Share2, MoreHorizontal } from "lucide-react";
+import {
+  FileText,
+  Users,
+  Calendar,
+  User,
+  Eye,
+  Download,
+  Share2,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import { PDFViewer } from "@/components/documents/PDFViewer";
 import { getDocumentUrl } from "@/lib/getDocumentUrl";
 import { ShareDocumentModal } from "@/components/share/ShareDocumentModal";
@@ -13,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 type Priority = "URGENT" | "HIGH" | "ROUTINE";
 
 interface DocumentCardProps {
+  id: string;
   title: string;
   uploadDate: string;
   uploader: string;
@@ -21,6 +33,9 @@ interface DocumentCardProps {
   priority: Priority;
   fileType?: string;
   storagePath?: string | null;
+  isOwner: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
 const priorityConfig = {
@@ -39,6 +54,7 @@ const priorityConfig = {
 };
 
 export function DocumentCard({
+  id,
   title,
   uploadDate,
   uploader,
@@ -46,7 +62,10 @@ export function DocumentCard({
   sharedWith,
   priority,
   fileType = "PDF",
-  storagePath
+  storagePath,
+  isOwner,
+  onEdit,
+  onDelete,
 }: DocumentCardProps) {
   const config = priorityConfig[priority];
   const [showPDFViewer, setShowPDFViewer] = useState(false);
@@ -113,15 +132,6 @@ export function DocumentCard({
                 "flex items-center gap-1 transition-all duration-200",
                 isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
               )}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 hover:bg-primary/10"
-                  onClick={handleViewDocument}
-                >
-                  <Eye className="w-3 h-3" />
-                </Button>
-                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -134,6 +144,17 @@ export function DocumentCard({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40 bg-background border-border shadow-lg">
+                    {isOwner && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit();
+                        }}
+                        className="hover:bg-accent">
+                        <Edit className="w-3 h-3 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={handleDownload} className="hover:bg-accent">
                       <Download className="w-3 h-3 mr-2" />
                       Download
@@ -142,6 +163,17 @@ export function DocumentCard({
                       <Share2 className="w-3 h-3 mr-2" />
                       Share
                     </DropdownMenuItem>
+                    {isOwner && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete();
+                        }}
+                        className="text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600">
+                        <Trash2 className="w-3 h-3 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
