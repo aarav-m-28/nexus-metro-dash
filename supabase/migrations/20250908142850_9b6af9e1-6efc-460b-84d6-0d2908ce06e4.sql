@@ -51,12 +51,20 @@ CREATE TABLE public.documents (
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 -- Create documents policies
-CREATE POLICY "Users can view their own, public, or shared documents"
+CREATE POLICY "Users can view their own, public, or shared documents" 
 ON public.documents 
 FOR SELECT 
 USING (
   auth.uid() = user_id OR
-  is_public = true
+  is_public = true OR
+  -- User's department is in the shared_with_departments array
+  (
+    (SELECT department FROM public.profiles WHERE user_id = auth.uid()) = ANY(shared_with_departments)
+  ) OR
+  -- User's ID is in the shared_with_users array
+  (
+    auth.uid() = ANY(shared_with_users)
+  )
 );
 
 CREATE POLICY "Users can create their own documents" 
@@ -132,3 +140,30 @@ $$ LANGUAGE plpgsql SET search_path = public;
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Add columns for sharing to documents table
+ALTER TABLE public.documents
+ADD COLUMN IF NOT EXISTS shared_with_departments TEXT[],
+ADD COLUMN IF NOT EXISTS shared_with_users UUID[];
+
+-- Add RPC function to share a document
+CREATE OR REPLACE FUNCTION share_document(
+  document_id UUID,
+  share_with_departments TEXT[],
+  share_with_users UUID[]
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE public.documents
+  SET
+    shared_with_departments = (
+      SELECT array_agg(DISTINCT e) FROM unnest(COALESCE(documents.shared_with_departments, '{}') || share_with_departments) e
+    ),
+    shared_with_users = (
+      SELECT array_agg(DISTINCT e) FROM unnest(COALESCE(documents.shared_with_users, '{}') || share_with_users) e
+    )
+  WHERE id = document_id AND user_id = auth.uid();
+END;
+$$;

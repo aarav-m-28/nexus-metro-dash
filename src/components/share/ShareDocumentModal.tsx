@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +7,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Share2, Copy, Mail, Link, Users, X, Check } from "lucide-react";
+import { Share2, Copy, Mail, Link, Users, X, Check, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ShareDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  documentId: string;
+  preselectedUser?: Profile;
   documentTitle: string;
+}
+
+interface Profile {
+  id: string;
+  user_id: string;
+  display_name: string;
+  department: string;
+  job_title: string;
+  email: string;
 }
 
 const departments = [
@@ -33,11 +45,15 @@ const accessLevels = [
   { value: "edit", label: "Edit", description: "Can view, download, comment, and edit" }
 ];
 
-export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocumentModalProps) {
-  const [shareMethod, setShareMethod] = useState<"internal" | "external">("internal");
+export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUser, documentTitle }: ShareDocumentModalProps) {
+  const [shareMethod, setShareMethod] = useState<"internal" | "external" | "personal">("internal");
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [externalEmails, setExternalEmails] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<Profile[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+  const [isUserSearchFocused, setIsUserSearchFocused] = useState(false);
   const [accessLevel, setAccessLevel] = useState("view");
   const [message, setMessage] = useState("");
   const [expireAfter, setExpireAfter] = useState("");
@@ -46,6 +62,27 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
   const [isSharing, setIsSharing] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen && preselectedUser) {
+      setShareMethod("personal");
+      setSelectedUsers([preselectedUser]);
+    } else if (!isOpen) {
+      // Reset to default when closing if it was pre-filled
+      setShareMethod("internal");
+    }
+    if (isOpen && shareMethod === "personal" && allProfiles.length === 0) {
+      const fetchProfiles = async () => {
+        const { data, error } = await supabase.from('profiles').select('*').returns<Profile[]>();
+        if (error) {
+          console.error('Error fetching profiles:', error);
+        } else if (data) {
+          setAllProfiles(data);
+        }
+      };
+      fetchProfiles();
+    }
+  }, [isOpen, shareMethod, allProfiles.length, preselectedUser]);
 
   const handleAddDepartment = (dept: string) => {
     if (!selectedDepartments.includes(dept)) {
@@ -69,6 +106,21 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
     setExternalEmails(prev => prev.filter(e => e !== email));
   };
 
+  const handleAddUser = (user: Profile) => {
+    if (!selectedUsers.some(u => u.id === user.id)) {
+      setSelectedUsers(prev => [...prev, user]);
+    }
+    setUserSearch("");
+    setIsUserSearchFocused(false);
+  };
+
+  const handleRemoveUser = (user: Profile) => {
+    setSelectedUsers(prev => prev.filter(u => u.id !== user.id));
+  };
+
+  const filteredProfiles = allProfiles.filter(p => 
+    p.display_name?.toLowerCase().includes(userSearch.toLowerCase())
+  );
   const generateShareLink = () => {
     const baseUrl = window.location.origin;
     const docId = documentTitle.toLowerCase().replace(/\s+/g, '-');
@@ -94,23 +146,43 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
       return;
     }
 
+    if (shareMethod === "personal" && selectedUsers.length === 0) {
+      toast({
+        title: "Select users",
+        description: "Please select at least one user to share with",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSharing(true);
     
     try {
-      // Simulate sharing process
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const link = generateShareLink();
-      setShareLink(link);
+      if (shareMethod === 'internal' || shareMethod === 'personal') {
+        const { error } = await supabase.rpc('share_document', {
+          document_id: documentId,
+          share_with_departments: shareMethod === 'internal' ? selectedDepartments : [],
+          share_with_users: shareMethod === 'personal' ? selectedUsers.map(u => u.user_id) : []
+        });
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        // External sharing is not implemented on the backend yet.
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
       
       toast({
         title: "Document shared successfully",
         description: `${documentTitle} has been shared with the selected recipients`,
       });
+      setTimeout(handleClose, 1500);
     } catch (error) {
+      console.error("Error sharing document:", error);
       toast({
         title: "Sharing failed",
-        description: "There was an error sharing the document",
+        description: "There was an error sharing the document. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -131,6 +203,8 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
   const handleClose = () => {
     setSelectedDepartments([]);
     setExternalEmails([]);
+    setSelectedUsers([]);
+    setUserSearch("");
     setEmailInput("");
     setMessage("");
     setShareLink("");
@@ -155,7 +229,7 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
           {/* Share Method */}
           <div className="space-y-3">
             <Label>Share Method</Label>
-            <div className="flex gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Button
                 variant={shareMethod === "internal" ? "default" : "outline"}
                 onClick={() => setShareMethod("internal")}
@@ -171,6 +245,14 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
               >
                 <Mail className="w-4 h-4" />
                 External (Email)
+              </Button>
+              <Button
+                variant={shareMethod === "personal" ? "default" : "outline"}
+                onClick={() => setShareMethod("personal")}
+                className={`flex-1 gap-2 transition-all duration-200 ${shareMethod === 'personal' ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20' : ''}`}
+              >
+                <User className="w-4 h-4" />
+                Personal (User)
               </Button>
             </div>
           </div>
@@ -241,6 +323,57 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
                         size="sm"
                         className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
                         onClick={() => handleRemoveEmail(email)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Personal Sharing */}
+          {shareMethod === "personal" && (
+            <div className="space-y-3">
+              <Label>Select Users</Label>
+              <div className="relative">
+                <Input
+                  id="share-user-input"
+                  name="user"
+                  autoComplete="off"
+                  placeholder="Search for users by name..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  onFocus={() => setIsUserSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsUserSearchFocused(false), 150)}
+                />
+                {isUserSearchFocused && userSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {filteredProfiles.length > 0 ? (
+                      filteredProfiles.map(p => (
+                        <div key={p.id} className="p-2 hover:bg-muted cursor-pointer" onMouseDown={() => handleAddUser(p)}>
+                          <p className="font-medium">{p.display_name}</p>
+                          <p className="text-sm text-muted-foreground">{p.department}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-muted-foreground">No users found.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedUsers.map((user) => (
+                    <Badge key={user.id} variant="secondary" className="gap-1">
+                      {user.display_name}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => handleRemoveUser(user)}
                       >
                         <X className="w-3 h-3" />
                       </Button>

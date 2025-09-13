@@ -76,6 +76,7 @@ export function DashboardSidebar() {
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -88,6 +89,17 @@ export function DashboardSidebar() {
     };
     fetchProfiles();
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchContainerRef]);
 
   const filteredProfiles = allProfiles.filter(p =>
     p.display_name?.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
@@ -224,16 +236,20 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <div className="relative">
+        <div className="relative" ref={searchContainerRef}>
           <form onSubmit={handleSidebarSearch} className="relative mb-2">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search profiles..."
               value={sidebarSearch}
-              onChange={(e) => setSidebarSearch(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+              onChange={(e) => {
+                setSidebarSearch(e.target.value);
+                if (!isSearchFocused) {
+                  setIsSearchFocused(true);
+                }
+              }}
+              onClick={() => setIsSearchFocused(true)}
               className="h-9 pl-8"
             />
           </form>
@@ -243,7 +259,7 @@ export function DashboardSidebar() {
                 <div className="p-2 space-y-1">
                   <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase">Profiles ({filteredProfiles.length})</h3>
                   {filteredProfiles.map(p => (
-                    <Button key={p.id} variant="ghost" className="w-full justify-start gap-2 h-auto py-2" onClick={() => navigate(`/profile/${p.user_id}`)}>
+                    <Button key={p.id} variant="ghost" className="w-full justify-start gap-2 h-auto py-2" onClick={() => { navigate(`/profile/${p.user_id}`); setIsSearchFocused(false); }}>
                       <User className="h-4 w-4" />
                       <div className="flex flex-col items-start">
                         <span className="text-sm">{p.display_name}</span>
@@ -256,13 +272,18 @@ export function DashboardSidebar() {
                 <div className="p-2 space-y-1">
                   <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase">All Profiles</h3>
                   {Object.keys(profilesByDepartment).sort().map(dept => (
-                    <div key={dept}>
+                    <div key={dept} className="mt-1">
                       <h4 className="px-2 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{dept}</h4>
                       {profilesByDepartment[dept].map(p => (
-                        <Button key={p.id} variant="ghost" className="w-full justify-start gap-2 h-auto py-2" onClick={() => navigate(`/profile/${p.user_id}`)}>
+                        <Button
+                          key={p.id}
+                          variant="ghost"
+                          className="w-full justify-start gap-2 h-auto py-2 leading-tight"
+                          onClick={() => { navigate(`/profile/${p.user_id}`); setIsSearchFocused(false); }}
+                        >
                           <User className="h-4 w-4" />
                           <div className="flex flex-col items-start">
-                            <span className="text-sm">{p.display_name}</span>
+                            <span className="text-sm leading-tight">{p.display_name}</span>
                             <span className="text-xs text-muted-foreground">{p.job_title || 'No title'}</span>
                           </div>
                         </Button>
