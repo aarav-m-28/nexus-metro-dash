@@ -9,8 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "ai:dev": "cd ai-backend && python main.py",
-    "ai:install": "cd ai-backend && pip install -r requirements.txt",
+    "ai:dev": "npm run start:ai",
+    "ai:install": "cd ai-backend && python -m pip install -r requirements.txt",
     "dev:full": "concurrently \"npm run dev\" \"npm run ai:dev\"",
     "start:ai": "cd ai-backend && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
   },
