@@ -57,9 +57,9 @@ FOR SELECT
 USING (
   auth.uid() = user_id OR
   is_public = true OR
-  -- User's department is in the shared_with_departments array
+  -- User's department is in the shared_with array
   (
-    (SELECT department FROM public.profiles WHERE user_id = auth.uid()) = ANY(shared_with_departments)
+    (SELECT department FROM public.profiles WHERE user_id = auth.uid()) = ANY(shared_with)
   ) OR
   -- User's ID is in the shared_with_users array
   (
@@ -143,13 +143,13 @@ FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Add columns for sharing to documents table
 ALTER TABLE public.documents
-ADD COLUMN IF NOT EXISTS shared_with_departments TEXT[],
+ADD COLUMN IF NOT EXISTS shared_with TEXT[],
 ADD COLUMN IF NOT EXISTS shared_with_users UUID[];
 
 -- Add RPC function to share a document
 CREATE OR REPLACE FUNCTION share_document(
   document_id UUID,
-  share_with_departments TEXT[],
+  share_with TEXT[],
   share_with_users UUID[]
 )
 RETURNS void
@@ -158,8 +158,8 @@ AS $$
 BEGIN
   UPDATE public.documents
   SET
-    shared_with_departments = (
-      SELECT array_agg(DISTINCT e) FROM unnest(COALESCE(documents.shared_with_departments, '{}') || share_with_departments) e
+    shared_with = (
+      SELECT array_agg(DISTINCT e) FROM unnest(COALESCE(documents.shared_with, '{}') || share_with) e
     ),
     shared_with_users = (
       SELECT array_agg(DISTINCT e) FROM unnest(COALESCE(documents.shared_with_users, '{}') || share_with_users) e

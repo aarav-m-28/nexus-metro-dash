@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DocumentCard } from "@/components/dashboard/DocumentCard";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search as SearchIcon, Filter, SortAsc, X, Clock, FileText, Users, Building, Languages } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +36,7 @@ export default function Search() {
   const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("ALL");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL");
+  const [selectedVisibility, setSelectedVisibility] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<string>("date");
   const [recentSearches] = useState<string[]>([]);
   const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
@@ -48,10 +49,11 @@ export default function Search() {
     // Start with documents visible to the user: either they created them, they are public, or they are shared with the user's department.
     let filtered = documents.filter(doc => {
       const isOwner = doc.user_id === user?.id;
-      const isPublic = doc.is_public === true;
       const isSharedWithUserDept = profile?.department && Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.department);
+      const isSharedWithUser = user?.id && Array.isArray(doc.shared_with_users) && doc.shared_with_users.includes(user.id);
       
-      return isOwner || isPublic || isSharedWithUserDept;
+      // A document is accessible if you own it, or it's shared with you or your department.
+      return isOwner || isSharedWithUserDept || isSharedWithUser;
     });
 
     // Text search
@@ -63,6 +65,12 @@ export default function Search() {
         doc.file_name?.toLowerCase().includes(query) ||
         doc.file_type?.toLowerCase().includes(query)
       );
+    }
+
+    // Visibility filter
+    if (selectedVisibility !== "ALL") {
+      const isPublic = selectedVisibility === "Public";
+      filtered = filtered.filter(doc => (doc.is_public || false) === isPublic);
     }
 
     // Priority filter (if documents have priority field)
@@ -98,18 +106,20 @@ export default function Search() {
     });
 
     return filtered;
-  }, [documents, searchQuery, selectedPriority, selectedDepartment, selectedLanguage, sortBy, user, profile]);
+  }, [documents, searchQuery, selectedPriority, selectedDepartment, selectedLanguage, selectedVisibility, sortBy, user, profile]);
 
   const clearAllFilters = () => {
     setSelectedPriority("ALL");
     setSearchQuery("");
     setSelectedDepartment("ALL");
     setSelectedLanguage("ALL");
+    setSelectedVisibility("ALL");
     setSortBy("date");
   };
 
   const departments = ["ALL", "Safety & Operations", "Finance Department", "Engineering", "Customer Relations", "Technical Services", "Safety & Security"];
   const priorities = ["ALL", "URGENT", "HIGH", "ROUTINE"];
+  const visibilities = ["ALL", "Public", "Private"];
   const languages = ["ALL", "english", "hindi", "malayalam"];
   const sortOptions = [
     { value: "date", label: "Date" },
@@ -180,6 +190,22 @@ export default function Search() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 h-10">
+                    <Users className="w-4 h-4" />
+                    Visibility: {selectedVisibility}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {visibilities.map(visibility => (
+                    <DropdownMenuItem key={visibility} onClick={() => setSelectedVisibility(visibility)}>
+                      {visibility}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 h-10">
                     <Languages className="w-4 h-4" />
                     Language: {selectedLanguage === "ALL" ? "All" : <span className="capitalize">{selectedLanguage}</span>}
                   </Button>
@@ -225,7 +251,7 @@ export default function Search() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date") && (
+              {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date" || selectedVisibility !== "ALL") && (
                 <Button variant="ghost" onClick={clearAllFilters} className="gap-2 text-muted-foreground">
                   <X className="w-4 h-4" />
                   Clear All
@@ -234,7 +260,7 @@ export default function Search() {
             </div>
 
             {/* Search Results Summary */}
-            {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL") && (
+            {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || selectedVisibility !== "ALL") && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -247,6 +273,7 @@ export default function Search() {
                         {searchQuery && `Matching "${searchQuery}"`}
                         {selectedPriority !== "ALL" && ` • ${selectedPriority} priority`}
                         {selectedDepartment !== "ALL" && ` • ${selectedDepartment}`}
+                        {selectedVisibility !== "ALL" && ` • ${selectedVisibility} documents`}
                         {selectedLanguage !== "ALL" && ` • ${selectedLanguage} language`}
                       </p>
                     </div>

@@ -65,21 +65,19 @@ export function DocumentList({ filter }: DocumentListProps) {
   // Filtering logic
   const accessibleDocs = documents.filter(doc => {
     const isOwner = doc.user_id === user?.id;
-    const isPublic = doc.is_public === true;
     const isSharedWithUserDept = profile?.department && Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.department);
-    return isOwner || isPublic || isSharedWithUserDept;
+    const isSharedWithUser = user?.id && Array.isArray(doc.shared_with_users) && doc.shared_with_users.includes(user.id);
+
+    // A document is accessible if you own it, or it's shared with you or your department.
+    return isOwner || isSharedWithUserDept || isSharedWithUser;
   });
 
   let filteredDocs = accessibleDocs;
   if (filter === 'sharedByMe' && user) {
-    filteredDocs = accessibleDocs.filter(doc => doc.user_id === user.id);
+    filteredDocs = accessibleDocs.filter(doc => doc.user_id === user?.id);
   } else if (filter === 'sharedWithMe' && profile && profile.department) {
-    filteredDocs = documents.filter(doc => {
-      // Only show if user's department is in shared_with AND the user is not the owner
-      const isSharedWithUserDept = Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.department!);
-      const isNotOwner = doc.user_id !== user?.id;
-      return isSharedWithUserDept && isNotOwner;
-    });
+    // "Shared with me" is simply all accessible documents that the user does not own.
+    filteredDocs = accessibleDocs.filter(doc => doc.user_id !== user?.id);
   }
 
   return (

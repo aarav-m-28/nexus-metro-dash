@@ -161,7 +161,7 @@ export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUse
       if (shareMethod === 'internal' || shareMethod === 'personal') {
         const { error } = await supabase.rpc('share_document', {
           document_id: documentId,
-          share_with_departments: shareMethod === 'internal' ? selectedDepartments : [],
+          share_with: shareMethod === 'internal' ? selectedDepartments : [],
           share_with_users: shareMethod === 'personal' ? selectedUsers.map(u => u.user_id) : []
         });
 

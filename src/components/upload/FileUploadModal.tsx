@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Upload, X, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDocuments } from "@/hooks/useDocuments";
+import { useProfile } from "@/hooks/useProfile";
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ const priorities = [
 ];
 
 export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
+  const { profile } = useProfile();
   const { uploadDocument } = useDocuments();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isNoFile, setIsNoFile] = useState(false);
@@ -46,11 +48,16 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
     priority: "ROUTINE",
     description: "",
     sharedWith: [] as string[],
-    is_public: false,
     language: "english",
     content: "",
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen && profile?.department) {
+      setFormData(prev => ({ ...prev, department: profile.department }));
+    }
+  }, [isOpen, profile]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files ? Array.from(event.target.files) : [];
@@ -127,7 +134,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
           formData.department,
           formData.priority,
           formData.sharedWith,
-          formData.is_public,
+          true, // All documents are public by default in the DB
           formData.language
         )
       );
@@ -141,7 +148,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
             formData.department,
             formData.priority,
             formData.sharedWith,
-            formData.is_public,
+            true, // All documents are public by default in the DB
             formData.language
           )
         );
@@ -190,7 +197,6 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
       priority: "ROUTINE",
       description: "",
       sharedWith: [],
-      is_public: false,
       language: "english",
       content: "",
     });
@@ -318,19 +324,12 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
 
             <div className="space-y-2">
               <Label htmlFor="department">Department *</Label>
-              <Select
+              <Input
+                id="department"
+                name="department"
                 value={formData.department}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                disabled
+              />
             </div>
 
             <div className="space-y-2">
@@ -386,65 +385,39 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
           </div>
 
           {/* Share With */}
-          {!formData.is_public && (
-            <div className="space-y-3">
-              <Label>Share with Departments</Label>
-              <Select onValueChange={handleAddDepartment}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Add departments to share with" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem key={ALL_DEPARTMENTS} value={ALL_DEPARTMENTS}>{ALL_DEPARTMENTS}</SelectItem>
-                  {departments
-                    .filter(dept => !formData.sharedWith.includes(dept))
-                    .map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              
-              {formData.sharedWith.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.sharedWith.map((dept) => (
-                    <Badge key={dept} variant="secondary" className="gap-1">
-                      {dept}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleRemoveDepartment(dept)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Visibility Settings */}
           <div className="space-y-3">
-            <Label>Visibility</Label>
-            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-              <div>
-                <Label htmlFor="is-public-switch">Make Public</Label>
-                <p className="text-xs text-muted-foreground">
-                  Anyone in the organization can find and view this document.
-                </p>
+            <Label>Share with Departments</Label>
+            <Select onValueChange={handleAddDepartment}>
+              <SelectTrigger>
+                <SelectValue placeholder="Add departments to share with" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem key={ALL_DEPARTMENTS} value={ALL_DEPARTMENTS}>{ALL_DEPARTMENTS}</SelectItem>
+                {departments
+                  .filter(dept => !formData.sharedWith.includes(dept))
+                  .map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            
+            {formData.sharedWith.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.sharedWith.map((dept) => (
+                  <Badge key={dept} variant="secondary" className="gap-1">
+                    {dept}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleRemoveDepartment(dept)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </Badge>
+                ))}
               </div>
-              <Switch
-                id="is-public-switch"
-                checked={formData.is_public}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setFormData(prev => ({ ...prev, is_public: checked, sharedWith: [] }));
-                  } else {
-                    setFormData(prev => ({ ...prev, is_public: checked }));
-                  }
-                }}
-              />
-            </div>
+            )}
           </div>
         </div>
 
