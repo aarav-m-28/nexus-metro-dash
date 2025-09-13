@@ -58,6 +58,10 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
   const [isConnected, setIsConnected] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [availableDocuments, setAvailableDocuments] = useState<any[]>([]);
@@ -69,6 +73,20 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
         setShowScrollButton(false);
+<<<<<<< HEAD
+      }
+    }
+  };
+
+  const handleScroll = () => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+        setShowScrollButton(!isNearBottom);
+=======
+>>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
       }
     }
   };
@@ -83,9 +101,15 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       }
     }
   };
+=======
+  const viewportRef = useRef<HTMLDivElement>(null);
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
 
   useEffect(() => {
-    scrollToBottom();
+    // When new messages are added, scroll to the bottom of the viewport.
+    if (viewportRef.current) {
+      viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -310,9 +334,21 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
         </CardHeader>
 
         {/* Chat Messages */}
+<<<<<<< HEAD
         <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">
           <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 chatbot-scrollbar">
             <div className="space-y-4 pr-2 min-h-full">
+=======
+<<<<<<< HEAD
+        <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 chatbot-scrollbar">
+            <div className="space-y-4 pr-2 min-h-full">
+=======
+        <CardContent className="flex-1 flex flex-col p-0">
+          <ScrollArea className="flex-1 p-4" viewportRef={viewportRef}>
+            <div className="space-y-4">
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
+>>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
               {messages.map((message) => (
                 <div key={message.id} className="space-y-2">
                   {message.type === 'system' && (
