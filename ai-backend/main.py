@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import requests
+<<<<<<< HEAD
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -23,6 +24,19 @@ def fetch_documents():
     try:
         response = supabase.table('documents').select('*').execute()
         return response.data
+=======
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import google.generativeai as genai
+
+# Example function to fetch documents from JS backend
+def fetch_documents():
+    try:
+        response = requests.get('http://localhost:3000/documents')  # Update port/path as needed
+        response.raise_for_status()
+        return response.json()
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
     except Exception as e:
         return {"error": str(e)}
 
@@ -41,6 +55,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
 
+<<<<<<< HEAD
 class DocumentAnalysisRequest(BaseModel):
     document_id: str
 
@@ -48,6 +63,8 @@ class DocumentSearchRequest(BaseModel):
     query: str
     limit: int = 10
 
+=======
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
 
 # Initialize Gemini API
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -59,6 +76,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 async def chat_endpoint(request: ChatRequest):
     user_message = request.message
     docs = fetch_documents()
+<<<<<<< HEAD
     
     # Prepare document info for prompt with content previews
     doc_summaries = ""
@@ -89,12 +107,24 @@ User message: {user_message}
 
 Please help the user with their query and suggest they upload documents if they need document-specific assistance."""
     
+=======
+    # Prepare document info for prompt
+    doc_summaries = ""
+    if isinstance(docs, list) and len(docs) > 0:
+        doc_summaries = "
+".join([f"Title: {doc.title}, Description: {doc.description}" for doc in docs])
+        prompt = f"You are an assistant. Here are some document titles and descriptions: {doc_summaries}.
+User message: {user_message}"
+    else:
+        prompt = f"You are an assistant. No documents are available. Please answer the user's question: {user_message}"
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         gemini_response = model.generate_content(prompt)
         response_text = gemini_response.text if hasattr(gemini_response, 'text') else str(gemini_response)
     except Exception as e:
         response_text = f"Gemini API error: {e}"
+<<<<<<< HEAD
     
     return {"response": response_text, "documents": docs}
 
@@ -181,6 +211,10 @@ async def get_documents_summary():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting documents summary: {str(e)}")
 
+=======
+    return {"response": response_text, "documents": docs}
+
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

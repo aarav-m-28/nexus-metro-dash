@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+<<<<<<< HEAD
 google-generativeai
 python-dotenv
 requests
@@ -8,3 +9,7 @@ PyPDF2
 python-magic
 python-magic-bin
 pypdf
+=======
+langchain
+google-generativeai
+>>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
