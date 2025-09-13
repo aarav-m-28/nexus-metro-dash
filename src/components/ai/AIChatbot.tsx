@@ -11,8 +11,14 @@ import {
   MessageSquare,
   FileText,
   Search,
-  Lightbulb
+  Lightbulb,
+  AlertCircle,
+  ChevronDown,
+  BookOpen,
+  FileSearch,
+  Sparkles
 } from "lucide-react";
+import { aiApi } from "@/lib/ai-api";
 
 interface ChatMessage {
   id: string;
@@ -31,7 +37,7 @@ const initialMessages: ChatMessage[] = [
   {
     id: '1',
     type: 'system',
-    content: 'AI Assistant initialized. Ready to help with document intelligence.',
+    content: 'Nexus AI Assistant initialized. Connected to document database.',
     timestamp: new Date(),
   },
   {
@@ -52,6 +58,9 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [availableDocuments, setAvailableDocuments] = useState<any[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -59,6 +68,18 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        setShowScrollButton(false);
+      }
+    }
+  };
+
+  const handleScroll = () => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+        setShowScrollButton(!isNearBottom);
       }
     }
   };
@@ -66,6 +87,126 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  // Load available documents when chatbot opens
+  useEffect(() => {
+    if (isOpen) {
+      loadAvailableDocuments();
+    }
+  }, [isOpen]);
+
+  const loadAvailableDocuments = async () => {
+    try {
+      const summary = await aiApi.getDocumentsSummary();
+      if (summary.documents) {
+        setAvailableDocuments(summary.documents);
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+    }
+  };
+
+  const handleAnalyzeDocument = async (documentId: string, documentTitle: string) => {
+    setIsTyping(true);
+    
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: `Analyze document: ${documentTitle}`,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    try {
+      const analysis = await aiApi.analyzeDocument(documentId);
+      
+      const aiMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: `## Document Analysis: ${documentTitle}\n\n${analysis.analysis}`,
+        timestamp: new Date(),
+        suggestions: ['Search for similar documents', 'Find related files', 'Get document summary']
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: `Sorry, I couldn't analyze the document "${documentTitle}". Please try again or check if the document is accessible.`,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleSearchDocuments = async (query: string) => {
+    setIsTyping(true);
+    
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: `Search documents: ${query}`,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    try {
+      const searchResults = await aiApi.searchDocuments(query, 5);
+      
+      let content = `## Search Results for "${query}"\n\n`;
+      
+      if (searchResults.documents.length === 0) {
+        content += "No documents found matching your search criteria.";
+      } else {
+        content += `Found ${searchResults.documents.length} document(s):\n\n`;
+        searchResults.documents.forEach((doc, index) => {
+          content += `${index + 1}. **${doc.title}**\n`;
+          content += `   - Department: ${doc.department || 'Unknown'}\n`;
+          content += `   - Priority: ${doc.priority || 'Normal'}\n`;
+          content += `   - Type: ${doc.file_type || 'Unknown'}\n`;
+          if (doc.description) {
+            content += `   - Description: ${doc.description}\n`;
+          }
+          content += `\n`;
+        });
+      }
+
+      const aiMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: content,
+        timestamp: new Date(),
+        suggestions: ['Analyze first document', 'Search for more specific terms', 'Show all documents']
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: `Sorry, I couldn't search documents for "${query}". Please try again.`,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -78,60 +219,65 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputValue);
+    try {
+      const response = await aiApi.sendMessage(currentInput);
+      
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: aiResponse.content,
+        content: response.response,
         timestamp: new Date(),
-        suggestions: aiResponse.suggestions
+        suggestions: generateSuggestions(response.response)
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('AI API Error:', error);
+      
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: `I'm having trouble connecting to the AI service. Please make sure the AI backend is running on port 8000. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+      setIsConnected(false);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
-  const generateAIResponse = (userQuery: string): { content: string; suggestions?: string[] } => {
-    const query = userQuery.toLowerCase();
+  const generateSuggestions = (response: string): string[] => {
+    const suggestions: string[] = [];
     
-    if (query.includes('safety') || query.includes('protocol')) {
-      return {
-        content: 'I found several safety-related documents:\n\n• **Safety Protocol Amendment - Metro Line 1 Operations Manual** (URGENT)\n• **Emergency Response Drill Report - December 2024** (URGENT)\n\nThese documents contain critical safety procedures and recent drill results. Would you like me to open any of these or search for specific safety topics?',
-        suggestions: ['Open safety protocol document', 'Show emergency procedures', 'Find safety training materials']
-      };
+    if (response.toLowerCase().includes('safety') || response.toLowerCase().includes('protocol')) {
+      suggestions.push('Show safety documents', 'Find emergency procedures', 'Safety training materials');
     }
     
-    if (query.includes('financial') || query.includes('budget')) {
-      return {
-        content: 'Here are the recent financial documents:\n\n• **Q4 2024 Financial Performance Analysis and Budget Variance Report** (HIGH)\n• **Energy Consumption Optimization Study - Phase 2 Results** (HIGH)\n\nThe Q4 report shows budget variance analysis and revenue performance. The energy study includes cost optimization insights. What specific financial information do you need?',
-        suggestions: ['Show budget variance details', 'Energy cost savings', 'Revenue analysis']
-      };
+    if (response.toLowerCase().includes('financial') || response.toLowerCase().includes('budget')) {
+      suggestions.push('Show financial reports', 'Budget analysis', 'Revenue data');
     }
     
-    if (query.includes('urgent')) {
-      return {
-        content: 'Currently, there are **2 urgent documents** requiring attention:\n\n🚨 **Safety Protocol Amendment - Metro Line 1 Operations Manual**\n🚨 **Emergency Response Drill Report - December 2024**\n\nBoth are from Safety & Operations department and need immediate review. Should I prioritize one for you?',
-        suggestions: ['Open first urgent document', 'Review emergency drill report', 'Show all urgent items']
-      };
+    if (response.toLowerCase().includes('urgent') || response.toLowerCase().includes('priority')) {
+      suggestions.push('Show urgent documents', 'High priority items', 'Review deadlines');
     }
     
-    if (query.includes('maintenance')) {
-      return {
-        content: '**Infrastructure Maintenance Schedule - January 2025** is available from the Engineering department. This document covers:\n\n• Railway track maintenance\n• Electrical system servicing\n• Monthly inspection schedules\n\nWould you like me to extract specific maintenance activities or dates?',
-        suggestions: ['Show January schedule', 'Find track maintenance', 'Electrical system updates']
-      };
+    if (response.toLowerCase().includes('maintenance')) {
+      suggestions.push('Maintenance schedules', 'Equipment status', 'Inspection reports');
     }
     
-    return {
-      content: `I understand you're asking about "${userQuery}". Let me search through the document database for relevant information. I can help you find specific documents, analyze content, or provide summaries of KMRL operational data.`,
-      suggestions: ['Search documents', 'Show recent uploads', 'Analyze document trends', 'Get document summary']
-    };
+    // Default suggestions if no specific context
+    if (suggestions.length === 0) {
+      suggestions.push('Search documents', 'Show recent uploads', 'Find by department', 'Get document summary');
+    }
+    
+    return suggestions.slice(0, 4); // Limit to 4 suggestions
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -151,6 +297,12 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
             </div>
             Nexus AI Assistant
             <Badge variant="secondary" className="text-xs ml-1">BETA</Badge>
+            {!isConnected && (
+              <Badge variant="destructive" className="text-xs ml-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Offline
+              </Badge>
+            )}
           </CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6">
             <X className="h-4 w-4" />
@@ -158,9 +310,9 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
         </CardHeader>
 
         {/* Chat Messages */}
-        <CardContent className="flex-1 flex flex-col p-0">
-          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-            <div className="space-y-4">
+        <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 chatbot-scrollbar">
+            <div className="space-y-4 pr-2 min-h-full">
               {messages.map((message) => (
                 <div key={message.id} className="space-y-2">
                   {message.type === 'system' && (
@@ -226,6 +378,66 @@ export function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
               )}
             </div>
           </ScrollArea>
+
+          {/* Scroll to Bottom Button */}
+          {showScrollButton && (
+            <Button
+              onClick={scrollToBottom}
+              size="icon"
+              className="absolute bottom-20 right-4 h-8 w-8 rounded-full shadow-lg bg-primary hover:bg-primary-hover z-10"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Document Actions */}
+          {availableDocuments.length > 0 && (
+            <div className="p-3 border-t bg-muted/30">
+              <div className="text-xs text-muted-foreground mb-2 font-medium">Quick Actions</div>
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSearchDocuments('urgent')}
+                  className="text-xs h-7"
+                >
+                  <FileSearch className="w-3 h-3 mr-1" />
+                  Urgent Docs
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSearchDocuments('safety')}
+                  className="text-xs h-7"
+                >
+                  <FileSearch className="w-3 h-3 mr-1" />
+                  Safety
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSearchDocuments('financial')}
+                  className="text-xs h-7"
+                >
+                  <FileSearch className="w-3 h-3 mr-1" />
+                  Financial
+                </Button>
+                {availableDocuments.slice(0, 2).map((doc) => (
+                  <Button
+                    key={doc.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAnalyzeDocument(doc.id, doc.title)}
+                    className="text-xs h-7 max-w-[120px] truncate"
+                    title={`Analyze: ${doc.title}`}
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {doc.title.length > 15 ? doc.title.substring(0, 15) + '...' : doc.title}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input Area */}
           <div className="p-4 border-t">
