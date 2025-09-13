@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
+import ProfilePage from "./pages/Profile";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -77,6 +78,11 @@ const App = () => {
                   <Route path="/settings" element={
                     <ProtectedRoute>
                       <Settings />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile/:userId" element={
+                    <ProtectedRoute>
+                      <ProfilePage />
                     </ProtectedRoute>
                   } />
                   <Route path="/login" element={<Login />} />

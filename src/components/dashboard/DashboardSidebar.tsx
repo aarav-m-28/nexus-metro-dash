@@ -29,7 +29,8 @@ import {
   Database,
   RefreshCw,
   ChevronRight,
-  Shield
+  Shield,
+  Users2,
 } from "lucide-react";
 
 
@@ -55,6 +56,15 @@ const sidebarItems = [
 ];
 
 export function DashboardSidebar() {
+  interface Profile {
+    id: string;
+    user_id: string;
+    display_name: string;
+    department: string;
+    job_title: string;
+    email: string;
+  }
+  
   console.log('[DashboardSidebar] Component starting to render');
   
   const { toast } = useToast();
@@ -64,52 +74,45 @@ export function DashboardSidebar() {
   const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data, error } = await supabase.from('profiles').select('*').returns<Profile[]>();
+      if (error) {
+        console.error('Error fetching profiles:', error);
+      } else if (data) {
+        setAllProfiles(data);
+      }
+    };
+    fetchProfiles();
+  }, []);
+
+  const filteredProfiles = allProfiles.filter(p =>
+    p.display_name?.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
+    p.email?.toLowerCase().includes(sidebarSearch.toLowerCase())
+  );
+
+  const profilesByDepartment = React.useMemo(() => {
+    const grouped: { [key: string]: Profile[] } = {};
+    allProfiles.forEach(p => {
+        const dept = p.department || 'Uncategorized';
+        if (!grouped[dept]) {
+            grouped[dept] = [];
+        }
+        grouped[dept].push(p);
+    });
+    // sort profiles within each department
+    Object.values(grouped).forEach(profiles => profiles.sort((a, b) => (a.display_name || '').localeCompare(b.display_name || '')));
+    return grouped;
+}, [allProfiles]);
 
   const handleSidebarSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (sidebarSearch.trim()) {
-      navigate(`/search?query=${encodeURIComponent(sidebarSearch)}`);
-      setSidebarSearch("");
-    }
+    // You can decide what to do on enter, for now it does nothing
+    // as results are shown live.
   };
-
-  console.log('[DashboardSidebar] Hooks initialized:', { 
-    hasUser: !!user, 
-    hasProfile: !!profile, 
-    profileLoading 
-  });
-
-  // Debug logging
-  console.log('[DashboardSidebar] Component render:', { 
-    user: user?.email,
-    profile: profile ? {
-      display_name: profile.display_name,
-      department: profile.department,
-      job_title: profile.job_title,
-      email: profile.email,
-      id: profile.id,
-      user_id: profile.user_id
-    } : null,
-    profileLoading
-  });
-
-  // Additional debug: Check if profile has hardcoded values
-  if (profile) {
-    console.log('[DashboardSidebar] Profile details:', {
-      fullProfile: profile,
-      isHardcoded: profile.display_name?.includes('Finance') || 
-                  profile.department?.includes('Finance') || 
-                  profile.job_title?.includes('Officer')
-    });
-  }
-
-  // Force refresh profile data if user exists but profile is null
-  useEffect(() => {
-    if (user && !profile && !profileLoading) {
-      console.log('[DashboardSidebar] User exists but no profile, forcing refresh');
-      // This will trigger useProfile to refetch
-    }
-  }, [user, profile, profileLoading]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -167,58 +170,6 @@ export function DashboardSidebar() {
     }
   };
 
-  const handleClearProfile = async () => {
-    console.log('[DashboardSidebar] Clear profile initiated');
-    
-    try {
-      await clearAndRecreateProfile();
-      toast({
-        title: "Profile cleared",
-        description: "Profile has been reset and recreated",
-      });
-    } catch (error) {
-      console.error('[DashboardSidebar] Clear profile error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to clear profile",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const debugDatabase = async () => {
-    if (!user) return;
-    
-    console.log('[DashboardSidebar] Debugging database for user:', user.id);
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      console.log('[DashboardSidebar] Database query result:', { data, error });
-      
-      if (data && data.length > 0) {
-        console.log('[DashboardSidebar] Found profiles in database:', data);
-        data.forEach((profile, index) => {
-          console.log(`[DashboardSidebar] Profile ${index + 1}:`, {
-            id: profile.id,
-            display_name: profile.display_name,
-            department: profile.department,
-            job_title: profile.job_title,
-            email: profile.email,
-            created_at: profile.created_at
-          });
-        });
-      } else {
-        console.log('[DashboardSidebar] No profiles found in database');
-      }
-    } catch (error) {
-      console.error('[DashboardSidebar] Database debug error:', error);
-    }
-  };
-
   // Get user display info
   const getUserDisplayInfo = () => {
     if (profileLoading) {
@@ -273,16 +224,56 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <form onSubmit={handleSidebarSearch} className="relative mb-2">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search..."
-            value={sidebarSearch}
-            onChange={(e) => setSidebarSearch(e.target.value)}
-            className="h-9 pl-8"
-          />
-        </form>
+        <div className="relative">
+          <form onSubmit={handleSidebarSearch} className="relative mb-2">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search profiles..."
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+              className="h-9 pl-8"
+            />
+          </form>
+          {isSearchFocused && (
+            <div className="absolute z-20 w-full mt-1 bg-background border rounded-md shadow-lg max-h-64 overflow-y-auto">
+              {sidebarSearch ? (
+                <div className="p-2 space-y-1">
+                  <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase">Profiles ({filteredProfiles.length})</h3>
+                  {filteredProfiles.map(p => (
+                    <Button key={p.id} variant="ghost" className="w-full justify-start gap-2 h-auto py-2" onClick={() => navigate(`/profile/${p.user_id}`)}>
+                      <User className="h-4 w-4" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm">{p.display_name}</span>
+                        <span className="text-xs text-muted-foreground">{p.department}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-2 space-y-1">
+                  <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase">All Profiles</h3>
+                  {Object.keys(profilesByDepartment).sort().map(dept => (
+                    <div key={dept}>
+                      <h4 className="px-2 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{dept}</h4>
+                      {profilesByDepartment[dept].map(p => (
+                        <Button key={p.id} variant="ghost" className="w-full justify-start gap-2 h-auto py-2" onClick={() => navigate(`/profile/${p.user_id}`)}>
+                          <User className="h-4 w-4" />
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm">{p.display_name}</span>
+                            <span className="text-xs text-muted-foreground">{p.job_title || 'No title'}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <SidebarMenu>
           {sidebarItems.map((item) => (

@@ -159,7 +159,7 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
               <Button
                 variant={shareMethod === "internal" ? "default" : "outline"}
                 onClick={() => setShareMethod("internal")}
-                className="flex-1 gap-2"
+                className={`flex-1 gap-2 transition-all duration-200 ${shareMethod === 'internal' ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20' : ''}`}
               >
                 <Users className="w-4 h-4" />
                 Internal (Departments)
@@ -167,7 +167,7 @@ export function ShareDocumentModal({ isOpen, onClose, documentTitle }: ShareDocu
               <Button
                 variant={shareMethod === "external" ? "default" : "outline"}
                 onClick={() => setShareMethod("external")}
-                className="flex-1 gap-2"
+                className={`flex-1 gap-2 transition-all duration-200 ${shareMethod === 'external' ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20' : ''}`}
               >
                 <Mail className="w-4 h-4" />
                 External (Email)

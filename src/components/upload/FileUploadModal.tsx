@@ -201,11 +201,14 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
     return (
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="max-w-md">
-          <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Upload Successful!</h3>
-            <p className="text-muted-foreground">Your document(s) have been uploaded.</p>
-          </div>
+          <DialogHeader>
+            <DialogTitle className="sr-only">Upload Successful</DialogTitle>
+            <div className="text-center py-8">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Upload Successful!</h3>
+              <p className="text-muted-foreground">Your document(s) have been uploaded.</p>
+            </div>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
     );

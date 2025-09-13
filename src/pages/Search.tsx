@@ -32,6 +32,7 @@ import { EditDocumentModal } from "@/components/documents/EditDocumentModal";
 
 export default function Search() {
   const { documents, loading, deleteDocument, updateDocument } = useDocuments();
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("ALL");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL");
@@ -52,6 +53,17 @@ export default function Search() {
       
       return isOwner || isPublic || isSharedWithUserDept;
     });
+
+    // Text search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(doc => 
+        doc.title?.toLowerCase().includes(query) ||
+        doc.description?.toLowerCase().includes(query) ||
+        doc.file_name?.toLowerCase().includes(query) ||
+        doc.file_type?.toLowerCase().includes(query)
+      );
+    }
 
     // Priority filter (if documents have priority field)
     if (selectedPriority !== "ALL") {
@@ -86,10 +98,11 @@ export default function Search() {
     });
 
     return filtered;
-  }, [documents, selectedPriority, selectedDepartment, selectedLanguage, sortBy, user, profile]);
+  }, [documents, searchQuery, selectedPriority, selectedDepartment, selectedLanguage, sortBy, user, profile]);
 
   const clearAllFilters = () => {
     setSelectedPriority("ALL");
+    setSearchQuery("");
     setSelectedDepartment("ALL");
     setSelectedLanguage("ALL");
     setSortBy("date");
@@ -118,14 +131,36 @@ export default function Search() {
               <div className="md:hidden">
                 <SidebarTrigger />
               </div>
-              <h1 className="text-3xl font-bold text-foreground">Browse Documents</h1>
+              <h1 className="text-3xl font-bold text-foreground">Advanced Search</h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              Browse and filter through {documents.length} documents across all departments
+              Search and filter through {documents.length} documents across all departments
             </p>
           </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative mb-4">
+            <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              id="search-input"
+              name="search"
+              placeholder="Search by keywords, title, content, department, or uploader..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoComplete="off"
+              className="pl-12 h-14 text-base bg-background/80 backdrop-blur-sm border-2 border-border/50 focus:border-primary/50 transition-all duration-200"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+            <div className="flex items-center gap-3 flex-wrap mt-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 h-10">
@@ -190,7 +225,7 @@ export default function Search() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date") && (
+              {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date") && (
                 <Button variant="ghost" onClick={clearAllFilters} className="gap-2 text-muted-foreground">
                   <X className="w-4 h-4" />
                   Clear All
@@ -199,7 +234,7 @@ export default function Search() {
             </div>
 
             {/* Search Results Summary */}
-            {(selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL") && (
+            {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL") && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -209,6 +244,7 @@ export default function Search() {
                         Found {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
                       </p>
                       <p className="text-sm text-muted-foreground">
+                        {searchQuery && `Matching "${searchQuery}"`}
                         {selectedPriority !== "ALL" && ` • ${selectedPriority} priority`}
                         {selectedDepartment !== "ALL" && ` • ${selectedDepartment}`}
                         {selectedLanguage !== "ALL" && ` • ${selectedLanguage} language`}
@@ -237,7 +273,7 @@ export default function Search() {
               {/* Results Header */}
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Filtered Documents ({filteredDocs.length})
+                  Search Results ({filteredDocs.length})
                 </h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
@@ -277,7 +313,7 @@ export default function Search() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">No documents found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  We couldn't find any documents matching your filter criteria. Try adjusting your filters.
+                  We couldn't find any documents matching your search criteria. Try adjusting your filters or search terms.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button variant="outline" onClick={clearAllFilters}>

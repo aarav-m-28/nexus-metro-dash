@@ -102,9 +102,24 @@ export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps
       {/* Action Bar */}
       <div className="flex items-center gap-3">
         <div className="flex-1 flex items-center gap-2">
-          <Button onClick={() => onFilterChange('all')} variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm">All Documents</Button>
-          <Button onClick={() => onFilterChange('sharedByMe')} variant={filter === 'sharedByMe' ? 'secondary' : 'ghost'} size="sm">Shared By Me</Button>
-          <Button onClick={() => onFilterChange('sharedWithMe')} variant={filter === 'sharedWithMe' ? 'secondary' : 'ghost'} size="sm">Shared With Me</Button>
+          <Button
+            onClick={() => onFilterChange('all')}
+            variant={filter === 'all' ? 'secondary' : 'ghost'}
+            size="sm"
+            className={`transition-all duration-200 ${filter === 'all' ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}
+          >All Documents</Button>
+          <Button
+            onClick={() => onFilterChange('sharedByMe')}
+            variant={filter === 'sharedByMe' ? 'secondary' : 'ghost'}
+            size="sm"
+            className={`transition-all duration-200 ${filter === 'sharedByMe' ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}
+          >Shared By Me</Button>
+          <Button
+            onClick={() => onFilterChange('sharedWithMe')}
+            variant={filter === 'sharedWithMe' ? 'secondary' : 'ghost'}
+            size="sm"
+            className={`transition-all duration-200 ${filter === 'sharedWithMe' ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}
+          >Shared With Me</Button>
         </div>
           <Button type="button" onClick={() => setUploadOpen(true)} className="gap-2">
             Upload Document

@@ -12,11 +12,15 @@ CREATE TABLE public.profiles (
 -- Enable RLS on profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- Drop old policies if they exist to ensure the new one is applied correctly
+DROP POLICY IF EXISTS "Authenticated users can view all profiles." ON public.profiles;
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+
 -- Create profiles policies
-CREATE POLICY "Users can view their own profile" 
+CREATE POLICY "Profiles are public."
 ON public.profiles 
 FOR SELECT 
-USING (auth.uid() = user_id);
+USING (true);
 
 CREATE POLICY "Users can update their own profile" 
 ON public.profiles 
@@ -47,10 +51,13 @@ CREATE TABLE public.documents (
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 -- Create documents policies
-CREATE POLICY "Users can view their own documents" 
+CREATE POLICY "Users can view their own, public, or shared documents"
 ON public.documents 
 FOR SELECT 
-USING (auth.uid() = user_id);
+USING (
+  auth.uid() = user_id OR
+  is_public = true
+);
 
 CREATE POLICY "Users can create their own documents" 
 ON public.documents 
