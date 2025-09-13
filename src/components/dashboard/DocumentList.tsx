@@ -137,6 +137,8 @@ export function DocumentList() {
               isOwner={doc.user_id === user?.id}
               onEdit={() => setEditingDocument(doc)} 
               onDelete={() => setDeletingDocument(doc)}
+              content={doc.content}
+              language={doc.language}
             />
           </div>
         ))}

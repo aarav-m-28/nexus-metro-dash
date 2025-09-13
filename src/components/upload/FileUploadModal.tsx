@@ -47,6 +47,8 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
     description: "",
     sharedWith: [] as string[],
     is_public: false,
+    language: "english",
+    content: "",
   });
   const { toast } = useToast();
 
@@ -125,7 +127,8 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
           formData.department,
           formData.priority,
           formData.sharedWith,
-          formData.is_public
+          formData.is_public,
+          formData.language
         )
       );
 
@@ -138,7 +141,8 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
             formData.department,
             formData.priority,
             formData.sharedWith,
-            formData.is_public
+            formData.is_public,
+            formData.language
           )
         );
       }
@@ -187,6 +191,8 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
       description: "",
       sharedWith: [],
       is_public: false,
+      language: "english",
+      content: "",
     });
     onClose();
   };
@@ -277,6 +283,20 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
               </div>
             )}
           </div>
+          
+          {isNoFile && (
+            <div className="space-y-2">
+              <Label htmlFor="content">Content</Label>
+              <Textarea
+                id="content"
+                value={formData.content}
+                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="Write your document content here..."
+                rows={10}
+                className="min-h-[200px]"
+              />
+            </div>
+          )}
 
           {/* Document Details */}
           <div className="grid grid-cols-2 gap-4">
@@ -311,7 +331,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="priority">Urgency</Label>
               <Select
                 value={formData.priority}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
@@ -328,6 +348,23 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
                       </div>
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="language">Language</Label>
+              <Select
+                value={formData.language}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="english">English</SelectItem>
+                  <SelectItem value="hindi">Hindi</SelectItem>
+                  <SelectItem value="malayalam">Malayalam</SelectItem>
                 </SelectContent>
               </Select>
             </div>

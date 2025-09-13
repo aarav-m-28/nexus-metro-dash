@@ -36,6 +36,8 @@ interface DocumentCardProps {
   isOwner: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  language?: string;
+  content?: string | null;
 }
 
 const priorityConfig = {
@@ -66,6 +68,8 @@ export function DocumentCard({
   isOwner,
   onEdit,
   onDelete,
+  language,
+  content,
 }: DocumentCardProps) {
   const config = priorityConfig[priority];
   const [showPDFViewer, setShowPDFViewer] = useState(false);
@@ -224,6 +228,12 @@ export function DocumentCard({
                   <span className="text-xs font-medium text-foreground">Department:</span>
                   <Badge variant="secondary" className="text-xs">{department}</Badge>
                 </div>
+                {language && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-foreground">Language:</span>
+                    <Badge variant="outline" className="text-xs capitalize">{language}</Badge>
+                  </div>
+                )}
                 
                 <div className="flex items-start gap-2">
                   <Users className="w-3 h-3 mt-0.5 text-muted-foreground" />
@@ -248,11 +258,13 @@ export function DocumentCard({
       </Card>
 
       <PDFViewer
-        isOpen={showPDFViewer}
-        onClose={() => setShowPDFViewer(false)}
-        documentTitle={title}
-        priority={priority}
-        pdfUrl={pdfUrl}
+  isOpen={showPDFViewer}
+  onClose={() => setShowPDFViewer(false)}
+  documentTitle={title}
+  priority={priority}
+  pdfUrl={pdfUrl}
+  languageTag={language}
+  content={content}
       />
 
       <ShareDocumentModal

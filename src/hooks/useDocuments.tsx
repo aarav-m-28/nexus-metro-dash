@@ -17,6 +17,8 @@ export interface Document {
   user_id?: string;
   department?: string;
   priority?: string;
+  content?: string;
+  language?: string;
   shared_with?: string[];
 }
 
@@ -27,6 +29,8 @@ export type DocumentUpdatePayload = Partial<
     | "description"
     | "department"
     | "priority"
+    | "content"
+    | "language"
     | "shared_with"
   >
 >;
@@ -73,7 +77,9 @@ export function useDocuments() {
     department?: string,
     priority?: string,
     sharedWith?: string[],
-    is_public?: boolean
+    is_public?: boolean,
+    language?: string,
+    content?: string
   ) => {
     if (!user) return null;
 
@@ -113,6 +119,8 @@ export function useDocuments() {
           file_type: fileType,
           storage_path: filePath, 
           is_public: is_public || false,
+          language: language,
+          content: content,
         })
         .select()
         .single();

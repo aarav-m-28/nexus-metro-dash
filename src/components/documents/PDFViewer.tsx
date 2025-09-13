@@ -13,9 +13,11 @@ interface PDFViewerProps {
   documentTitle: string;
   priority: "URGENT" | "HIGH" | "ROUTINE";
   pdfUrl?: string | null;
+  languageTag?: string;
+  content?: string | null;
 };
 
-export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: PDFViewerProps) {
+export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl, languageTag, content }: PDFViewerProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,9 +89,16 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: 
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <DialogTitle className="text-lg font-semibold pr-8">{documentTitle}</DialogTitle>
-                  <Badge className={"w-fit " + priorityConfig[priority].className}>
-                    {priorityConfig[priority].label}
-                  </Badge>
+                  <div className="flex gap-2 items-center">
+                    <Badge className={"w-fit " + priorityConfig[priority].className}>
+                      {priorityConfig[priority].label}
+                    </Badge>
+                    {languageTag && (
+                      <Badge className="w-fit bg-blue-100 text-blue-800 border border-blue-200" title="Language Tag">
+                        {languageTag}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Search is a placeholder, real search needs PDF.js */}
@@ -134,6 +143,12 @@ export function PDFViewer({ isOpen, onClose, documentTitle, priority, pdfUrl }: 
                     height={520}
                     style={getIframeStyle()}
                   />
+                </div>
+              ) : content ? (
+                <div className="bg-background p-6 rounded-lg border">
+                  <pre className="text-sm whitespace-pre-wrap font-sans">
+                    {content}
+                  </pre>
                 </div>
               ) : (
                 <div className="text-center py-20">

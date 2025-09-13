@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DocumentCard } from "@/components/dashboard/DocumentCard";
-import { Card } from "@/components/ui/card";
-import { Search as SearchIcon, Filter, SortAsc, X, Clock, FileText, Users, Building } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search as SearchIcon, Filter, SortAsc, X, Clock, FileText, Users, Building, Languages } from "lucide-react";
 import {
   Sidebar,
   SidebarInset,
@@ -35,6 +35,7 @@ export default function Search() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("ALL");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<string>("date");
   const [recentSearches] = useState<string[]>([]);
   const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
@@ -77,6 +78,11 @@ export default function Search() {
       );
     }
 
+    // Language filter
+    if (selectedLanguage !== "ALL") {
+      filtered = filtered.filter(doc => doc.language === selectedLanguage);
+    }
+
     // Sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -92,7 +98,7 @@ export default function Search() {
     });
 
     return filtered;
-  }, [documents, searchQuery, selectedPriority, selectedDepartment, sortBy, user, profile]);
+  }, [documents, searchQuery, selectedPriority, selectedDepartment, selectedLanguage, sortBy, user, profile]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -106,11 +112,13 @@ export default function Search() {
     setSearchQuery("");
     setSelectedPriority("ALL");
     setSelectedDepartment("ALL");
+    setSelectedLanguage("ALL");
     setSortBy("date");
   };
 
   const departments = ["ALL", "Safety & Operations", "Finance Department", "Engineering", "Customer Relations", "Technical Services", "Safety & Security"];
   const priorities = ["ALL", "URGENT", "HIGH", "ROUTINE"];
+  const languages = ["ALL", "english", "hindi", "malayalam"];
   const sortOptions = [
     { value: "date", label: "Date" },
     { value: "title", label: "Title" },
@@ -185,6 +193,22 @@ export default function Search() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 h-10">
+                    <Languages className="w-4 h-4" />
+                    Language: {selectedLanguage === "ALL" ? "All" : <span className="capitalize">{selectedLanguage}</span>}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {languages.map(lang => (
+                    <DropdownMenuItem key={lang} onClick={() => setSelectedLanguage(lang)}>
+                      <span className="capitalize">{lang}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 h-10">
                     <Building className="w-4 h-4" />
                     Department: {selectedDepartment === "ALL" ? "All" : selectedDepartment}
                   </Button>
@@ -214,7 +238,7 @@ export default function Search() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || sortBy !== "date") && (
+              {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date") && (
                 <Button variant="ghost" onClick={clearAllFilters} className="gap-2 text-muted-foreground">
                   <X className="w-4 h-4" />
                   Clear All
@@ -244,21 +268,24 @@ export default function Search() {
             )}
 
             {/* Search Results Summary */}
-            {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL") && (
-              <Card className="p-4 bg-primary/5 border-primary/20">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-foreground">
-                      Found {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {searchQuery && `Matching "${searchQuery}"`}
-                      {selectedPriority !== "ALL" && ` • ${selectedPriority} priority`}
-                      {selectedDepartment !== "ALL" && ` • ${selectedDepartment}`}
-                    </p>
+            {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL") && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        Found {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {searchQuery && `Matching "${searchQuery}"`}
+                        {selectedPriority !== "ALL" && ` • ${selectedPriority} priority`}
+                        {selectedDepartment !== "ALL" && ` • ${selectedDepartment}`}
+                        {selectedLanguage !== "ALL" && ` • ${selectedLanguage} language`}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </CardContent>
               </Card>
             )}
           </div>
@@ -306,6 +333,8 @@ export default function Search() {
                       isOwner={doc.user_id === user?.id}
                       onEdit={() => setEditingDocument(doc)}
                       onDelete={() => setDeletingDocument(doc)}
+                      content={doc.content}
+                      language={doc.language}
                     />
                   </div>
                 ))}

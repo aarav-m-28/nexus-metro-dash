@@ -4,14 +4,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -19,20 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Document, DocumentUpdatePayload } from "@/hooks/useDocuments"; 
-import { Upload, FileText, X } from "lucide-react";
-
-const departments = [
-  "Finance Department",
-  "Safety & Operations",
-  "Engineering",
-  "Customer Relations",
-  "Technical Services",
-  "Safety & Security",
-  "Management",
-  "Human Resources",
-];
-const ALL_DEPARTMENTS = "All Departments";
+import { Textarea } from "@/components/ui/textarea";
+import { Document, DocumentUpdatePayload } from "@/hooks/useDocuments";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditDocumentModalProps {
   isOpen: boolean;
@@ -46,6 +32,20 @@ interface EditDocumentModalProps {
   ) => Promise<boolean>;
 }
 
+const departments = [
+  "Finance Department",
+  "Safety & Operations",
+  "Engineering",
+  "Customer Relations",
+  "Technical Services",
+  "Safety & Security",
+  "Management",
+  "Human Resources",
+];
+
+const priorities = ["ROUTINE", "HIGH", "URGENT"];
+const languages = ["english", "hindi", "malayalam"];
+
 export function EditDocumentModal({
   isOpen,
   onClose,
@@ -53,224 +53,116 @@ export function EditDocumentModal({
   onUpdate,
 }: EditDocumentModalProps) {
   const [formData, setFormData] = useState<DocumentUpdatePayload>({});
-  const [newFile, setNewFile] = useState<File | null>(null);
-  const [fileRemoved, setFileRemoved] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (document) {
       setFormData({
         title: document.title,
-        description: document.description,
-        priority: document.priority,
+        description: document.description || "",
         department: document.department,
-        shared_with: document.shared_with || [],
+        priority: document.priority,
+        language: document.language || "english",
       });
-      setFileRemoved(false);
-      setNewFile(null); // Reset file on new document
     }
   }, [document]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdate = async () => {
     if (!document) return;
 
-    setIsSubmitting(true);
-    const success = await onUpdate(document.id, formData, newFile, fileRemoved);
-    setIsSubmitting(false);
+    setIsUpdating(true);
+    const success = await onUpdate(document.id, formData);
+    setIsUpdating(false);
 
     if (success) {
+      toast({ title: "Success", description: "Document updated successfully." });
       onClose();
     }
-  };
-
-  const handleAddDepartment = (dept: string) => {
-    if (dept === ALL_DEPARTMENTS) {
-      setFormData((prev) => ({
-        ...prev,
-        shared_with: [...departments],
-      }));
-      return;
-    }
-    if (!formData.shared_with?.includes(dept)) {
-      setFormData((prev) => ({
-        ...prev,
-        shared_with: [...(prev.shared_with || []), dept],
-      }));
-    }
-  };
-
-  const handleRemoveDepartment = (dept: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      shared_with: prev.shared_with?.filter((d) => d !== dept),
-    }));
   };
 
   if (!document) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Document</DialogTitle>
-          <DialogDescription>
-            Make changes to your document details here. Click save when you're
-            done.
-          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={formData.title || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              }
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
+              <Label htmlFor="department">Department</Label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, department: value }))
                 }
-              />
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="priority">Urgency</Label>
               <Select
                 value={formData.priority}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, priority: value })
+                  setFormData((prev) => ({ ...prev, priority: value }))
                 }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ROUTINE">Routine</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="URGENT">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Share with Departments</Label>
-              <Select onValueChange={handleAddDepartment}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Add departments to share with" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_DEPARTMENTS}>
-                    {ALL_DEPARTMENTS}
-                  </SelectItem>
-                  {departments
-                    .filter((dept) => !formData.shared_with?.includes(dept))
-                    .map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {formData.shared_with && formData.shared_with.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {formData.shared_with.map((dept) => (
-                    <Badge key={dept} variant="secondary" className="gap-1">
-                      {dept}
-                      <button
-                        type="button"
-                        className="h-4 w-4 p-0 rounded-full hover:bg-destructive/50 hover:text-destructive-foreground flex items-center justify-center"
-                        onClick={() => handleRemoveDepartment(dept)}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
+                  {priorities.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
                   ))}
-                </div>
-              )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="file-upload">File Attachment</Label>
-              <div
-                className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors min-h-[120px] flex items-center justify-center"
+              <Label htmlFor="language">Language</Label>
+              <Select
+                value={formData.language}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
               >
-                {newFile ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <FileText className="w-8 h-8 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">{newFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(newFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setNewFile(null)}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (document.file_name && !fileRemoved) ? (
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <div className="flex items-center justify-center gap-3 text-left">
-                      <FileText className="w-8 h-8 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <p className="font-medium truncate">{document.file_name}</p>
-                        {document.file_size && (
-                          <p className="text-sm text-muted-foreground">
-                            {(document.file_size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('edit-file-upload')?.click()}>
-                        Change File
-                      </Button>
-                      <Button type="button" variant="destructive" size="sm" onClick={() => setFileRemoved(true)}>
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground cursor-pointer" onClick={() => document.getElementById('edit-file-upload')?.click()}>
-                    <Upload className="w-8 h-8 mx-auto mb-2" />
-                    <p className="font-medium">Add a file</p>
-                    <p className="text-xs">Click here to select a file</p>
-                    {fileRemoved && (
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); setFileRemoved(false); }}
-                      >
-                        Undo remove
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <input
-                  id="edit-file-upload"
-                  type="file"
-                  className="hidden"
-                  accept=".pdf"
-                  onChange={(e) => {
-                    setNewFile(e.target.files?.[0] || null);
-                    setFileRemoved(false);
-                  }}
-                />
-              </div>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {languages.map(lang => <SelectItem key={lang} value={lang} className="capitalize">{lang}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save changes"}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isUpdating}>Cancel</Button>
+          <Button onClick={handleUpdate} disabled={isUpdating}>
+            {isUpdating ? "Updating..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
