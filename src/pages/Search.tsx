@@ -32,7 +32,6 @@ import { EditDocumentModal } from "@/components/documents/EditDocumentModal";
 
 export default function Search() {
   const { documents, loading, deleteDocument, updateDocument } = useDocuments();
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("ALL");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL");
@@ -53,17 +52,6 @@ export default function Search() {
       
       return isOwner || isPublic || isSharedWithUserDept;
     });
-
-    // Text search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(doc => 
-        doc.title?.toLowerCase().includes(query) ||
-        doc.description?.toLowerCase().includes(query) ||
-        doc.file_name?.toLowerCase().includes(query) ||
-        doc.file_type?.toLowerCase().includes(query)
-      );
-    }
 
     // Priority filter (if documents have priority field)
     if (selectedPriority !== "ALL") {
@@ -98,18 +86,9 @@ export default function Search() {
     });
 
     return filtered;
-  }, [documents, searchQuery, selectedPriority, selectedDepartment, selectedLanguage, sortBy, user, profile]);
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const handleQuickSearch = (query: string) => {
-    setSearchQuery(query);
-  };
+  }, [documents, selectedPriority, selectedDepartment, selectedLanguage, sortBy, user, profile]);
 
   const clearAllFilters = () => {
-    setSearchQuery("");
     setSelectedPriority("ALL");
     setSelectedDepartment("ALL");
     setSelectedLanguage("ALL");
@@ -139,40 +118,13 @@ export default function Search() {
               <div className="md:hidden">
                 <SidebarTrigger />
               </div>
-              <h1 className="text-3xl font-bold text-foreground">Advanced Search</h1>
+              <h1 className="text-3xl font-bold text-foreground">Browse Documents</h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              Intelligent search through {documents.length} documents across all departments
+              Browse and filter through {documents.length} documents across all departments
             </p>
           </div>
 
-          {/* Enhanced Search Interface */}
-          <div className="space-y-6">
-            {/* Main Search Bar */}
-            <div className="relative">
-              <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                id="search-input"
-                name="search"
-                placeholder="Search by keywords, title, content, department, or uploader..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                autoComplete="off"
-                className="pl-12 h-14 text-base bg-background/80 backdrop-blur-sm border-2 border-border/50 focus:border-primary/50 transition-all duration-200"
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0"
-                  onClick={() => handleSearch("")}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-
-            {/* Filter and Sort Controls */}
             <div className="flex items-center gap-3 flex-wrap">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -238,7 +190,7 @@ export default function Search() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date") && (
+              {(selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL" || sortBy !== "date") && (
                 <Button variant="ghost" onClick={clearAllFilters} className="gap-2 text-muted-foreground">
                   <X className="w-4 h-4" />
                   Clear All
@@ -246,29 +198,8 @@ export default function Search() {
               )}
             </div>
 
-            {/* Quick Search Suggestions */}
-            {!searchQuery && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">Recent searches:</p>
-                <div className="flex flex-wrap gap-2">
-                  {recentSearches.map((search, idx) => (
-                    <Button
-                      key={idx}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleQuickSearch(search)}
-                      className="gap-2 text-xs bg-muted/50 hover:bg-muted"
-                    >
-                      <Clock className="w-3 h-3" />
-                      {search}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Search Results Summary */}
-            {(searchQuery || selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL") && (
+            {(selectedPriority !== "ALL" || selectedDepartment !== "ALL" || selectedLanguage !== "ALL") && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -278,7 +209,6 @@ export default function Search() {
                         Found {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {searchQuery && `Matching "${searchQuery}"`}
                         {selectedPriority !== "ALL" && ` • ${selectedPriority} priority`}
                         {selectedDepartment !== "ALL" && ` • ${selectedDepartment}`}
                         {selectedLanguage !== "ALL" && ` • ${selectedLanguage} language`}
@@ -288,7 +218,6 @@ export default function Search() {
                 </CardContent>
               </Card>
             )}
-          </div>
         </div>
 
         {/* Enhanced Search Results */}
@@ -308,7 +237,7 @@ export default function Search() {
               {/* Results Header */}
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Search Results ({filteredDocs.length})
+                  Filtered Documents ({filteredDocs.length})
                 </h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
@@ -348,14 +277,11 @@ export default function Search() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">No documents found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  We couldn't find any documents matching your search criteria. Try adjusting your filters or search terms.
+                  We couldn't find any documents matching your filter criteria. Try adjusting your filters.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button variant="outline" onClick={clearAllFilters}>
                     Clear all filters
-                  </Button>
-                  <Button onClick={() => handleQuickSearch("safety")}>
-                    Search "safety"
                   </Button>
                 </div>
               </div>

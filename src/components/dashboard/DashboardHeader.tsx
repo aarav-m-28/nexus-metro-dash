@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Search, Bell, LogOut, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { FileUploadModal } from "@/components/upload/FileUploadModal";
@@ -11,18 +10,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export function DashboardHeader() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+interface DashboardHeaderProps {
+  filter: 'all' | 'sharedByMe' | 'sharedWithMe';
+  onFilterChange: (filter: 'all' | 'sharedByMe' | 'sharedWithMe') => void;
+}
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
+export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps) {
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const handleLogout = async () => {
     console.log('[DashboardHeader] logout click - current user:', user?.email);
@@ -105,28 +100,17 @@ export function DashboardHeader() {
       </div>
 
       {/* Action Bar */}
-      <form onSubmit={handleSearch}>
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-2xl group">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
-            <Input
-              id="header-search"
-              name="search"
-              autoComplete="off"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search documents by keyword, title, or content..."
-              className="pl-10 h-11 bg-background/50 backdrop-blur-sm border-input focus:border-primary focus:ring-primary/20 focus:bg-background transition-all duration-300 hover:shadow-md focus:shadow-lg"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 rounded-md pointer-events-none" />
-          </div>
-          
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-2">
+          <Button onClick={() => onFilterChange('all')} variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm">All Documents</Button>
+          <Button onClick={() => onFilterChange('sharedByMe')} variant={filter === 'sharedByMe' ? 'secondary' : 'ghost'} size="sm">Shared By Me</Button>
+          <Button onClick={() => onFilterChange('sharedWithMe')} variant={filter === 'sharedWithMe' ? 'secondary' : 'ghost'} size="sm">Shared With Me</Button>
+        </div>
           <Button type="button" onClick={() => setUploadOpen(true)} className="gap-2">
             Upload Document
           </Button>
           <FileUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

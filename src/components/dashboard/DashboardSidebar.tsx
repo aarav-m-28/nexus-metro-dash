@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   SidebarHeader,
@@ -20,6 +21,7 @@ import {
   LayoutDashboard, 
   Search, 
   Settings, 
+  FileText,
   LogOut,
   Building2,
   User,
@@ -29,7 +31,6 @@ import {
   ChevronRight,
   Shield
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 
 
 const sidebarItems = [
@@ -54,14 +55,6 @@ const sidebarItems = [
 ];
 
 export function DashboardSidebar() {
-  const [sidebarSearch, setSidebarSearch] = useState("");
-  const handleSidebarSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (sidebarSearch.trim()) {
-      navigate(`/search?query=${encodeURIComponent(sidebarSearch)}`);
-      setSidebarSearch("");
-    }
-  };
   console.log('[DashboardSidebar] Component starting to render');
   
   const { toast } = useToast();
@@ -70,6 +63,15 @@ export function DashboardSidebar() {
   const { profile, loading: profileLoading, clearAndRecreateProfile } = useProfile();
   const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+
+  const handleSidebarSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (sidebarSearch.trim()) {
+      navigate(`/search?query=${encodeURIComponent(sidebarSearch)}`);
+      setSidebarSearch("");
+    }
+  };
 
   console.log('[DashboardSidebar] Hooks initialized:', { 
     hasUser: !!user, 

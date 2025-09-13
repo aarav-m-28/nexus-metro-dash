@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DocumentList } from "@/components/dashboard/DocumentList";
@@ -12,6 +12,7 @@ import {
 
 const Index = () => {
   console.log('[Index] Component rendering');
+  const [filter, setFilter] = useState<'all' | 'sharedByMe' | 'sharedWithMe'>('all');
   
   return (
     <SidebarProvider>
@@ -20,8 +21,8 @@ const Index = () => {
         <DashboardSidebar />
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader />
-        <DocumentList />
+        <DashboardHeader filter={filter} onFilterChange={setFilter} />
+        <DocumentList filter={filter} />
       </SidebarInset>
       <AIChatFAB />
     </SidebarProvider>
