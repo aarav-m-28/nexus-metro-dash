@@ -1,4 +1,3 @@
-
 import sys
 import os
 
@@ -8,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
 import requests
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
@@ -28,6 +27,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 document_processor = DocumentProcessor(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
+router = APIRouter()
 
 # Allow CORS for frontend
 app.add_middleware(
@@ -55,10 +55,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 if not GOOGLE_API_KEY:
     print("Warning: GOOGLE_API_KEY is not set. AI features will not work.")
 
-
-
-
-@app.post("/chat")
+@router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     print("Received request for /chat")
     user_message = request.message
@@ -81,7 +78,7 @@ async def chat_endpoint(request: ChatRequest):
     
     return {"response": response_text}
 
-@app.post("/analyze-document")
+@router.post("/analyze-document")
 async def analyze_document(request: DocumentAnalysisRequest):
     print(f"Received request for /analyze-document for document_id: {request.document_id}")
     """Analyze a specific document and return its content."""
@@ -131,7 +128,7 @@ Please provide:
         print(f"Error in /analyze-document endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error analyzing document: {str(e)}")
 
-@app.post("/search-documents")
+@router.post("/search-documents")
 async def search_documents(request: DocumentSearchRequest):
     print(f"Received request for /search-documents with query: {request.query}")
     """Search documents by query."""
@@ -142,7 +139,7 @@ async def search_documents(request: DocumentSearchRequest):
         print(f"Error in /search-documents endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error searching documents: {str(e)}")
 
-@app.get("/document/{document_id}")
+@router.get("/document/{document_id}")
 async def get_document(document_id: str):
     print(f"Received request for /document/{document_id}")
     """Get document details and content."""
@@ -156,7 +153,7 @@ async def get_document(document_id: str):
         print(f"Error in /document/{document_id} endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting document: {str(e)}")
 
-@app.get("/documents/summary")
+@router.get("/documents/summary")
 async def get_documents_summary():
     print("Received request for /documents/summary")
     """Get summary of all documents for AI processing."""
@@ -176,6 +173,8 @@ async def get_documents_summary():
     except Exception as e:
         print(f"Error in /documents/summary endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting documents summary: {str(e)}")
+
+app.include_router(router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn
