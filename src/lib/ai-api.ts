@@ -81,8 +81,8 @@ export class AIApiService {
       const data = await response.json();
       return data as ChatResponse;
     } catch (error) {
-      console.error('Error sending message to AI backend:', error);
-      throw new Error('Failed to communicate with AI assistant. Please try again.');
+      console.error('Error in sendMessage:', error);
+      throw new Error(`Failed to communicate with AI assistant: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -119,8 +119,8 @@ export class AIApiService {
       const data = await response.json();
       return data as DocumentAnalysisResponse;
     } catch (error) {
-      console.error('Error analyzing document:', error);
-      throw new Error('Failed to analyze document. Please try again.');
+      console.error('Error in analyzeDocument:', error);
+      throw new Error(`Failed to analyze document: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -141,8 +141,8 @@ export class AIApiService {
       const data = await response.json();
       return data as DocumentSearchResponse;
     } catch (error) {
-      console.error('Error searching documents:', error);
-      throw new Error('Failed to search documents. Please try again.');
+      console.error('Error in searchDocuments:', error);
+      throw new Error(`Failed to search documents: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -162,8 +162,8 @@ export class AIApiService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error getting document:', error);
-      throw new Error('Failed to get document. Please try again.');
+      console.error('Error in getDocument:', error);
+      throw new Error(`Failed to get document: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -183,8 +183,8 @@ export class AIApiService {
       const data = await response.json();
       return data as DocumentsSummaryResponse;
     } catch (error) {
-      console.error('Error getting documents summary:', error);
-      throw new Error('Failed to get documents summary. Please try again.');
+      console.error('Error in getDocumentsSummary:', error);
+      throw new Error(`Failed to get documents summary: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
