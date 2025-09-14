@@ -3,10 +3,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import requests
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -17,6 +13,10 @@ from document_processor import DocumentProcessor
 # Initialize Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in your .env file")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Initialize document processor
@@ -27,22 +27,6 @@ def fetch_documents():
     try:
         response = supabase.table('documents').select('*').execute()
         return response.data
-<<<<<<< HEAD
-=======
-=======
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import google.generativeai as genai
-
-# Example function to fetch documents from JS backend
-def fetch_documents():
-    try:
-        response = requests.get('http://localhost:3000/documents')  # Update port/path as needed
-        response.raise_for_status()
-        return response.json()
->>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
     except Exception as e:
         return {"error": str(e)}
 
@@ -61,10 +45,6 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
 class DocumentAnalysisRequest(BaseModel):
     document_id: str
 
@@ -72,37 +52,32 @@ class DocumentSearchRequest(BaseModel):
     query: str
     limit: int = 10
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
-
 # Initialize Gemini API
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GOOGLE_API_KEY)
+
+if not GOOGLE_API_KEY:
+    print("Warning: GOOGLE_API_KEY is not set. AI features will not work.")
+
 
 
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     user_message = request.message
-    docs = fetch_documents()
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
     
-    # Prepare document info for prompt with content previews
+    # Fetch a limited number of recent documents for context to avoid overly large prompts
+    try:
+        docs_response = supabase.table('documents').select('*').order('created_at', desc=True).limit(10).execute()
+        docs = docs_response.data
+    except Exception as e:
+        docs = []
+        print(f"Could not fetch documents for chat context: {e}")
+
     doc_summaries = ""
     if isinstance(docs, list) and len(docs) > 0:
         doc_summaries = "\n".join([
-            f"Title: {doc.get('title', 'Untitled')}, "
-            f"Department: {doc.get('department', 'Unknown')}, "
-            f"Priority: {doc.get('priority', 'Normal')}, "
-            f"File Type: {doc.get('file_type', 'Unknown')}, "
-            f"Description: {doc.get('description', 'No description')}, "
-            f"Content Preview: {doc.get('content', 'No content available')[:200]}..."
+            f"- Title: {doc.get('title', 'Untitled')} (Department: {doc.get('department', 'N/A')}, Priority: {doc.get('priority', 'N/A')})"
             for doc in docs
         ])
         prompt = f"""You are Nexus AI, an intelligent assistant for KMRL (Kochi Metro Rail Limited) document management system. 
@@ -112,7 +87,7 @@ Available documents:
 
 User message: {user_message}
 
-Please provide helpful responses about these documents, help users find relevant information, and assist with document management tasks. Be specific about document titles, departments, and priorities when relevant. You can reference document content and help users understand what's in their documents."""
+Based on the available documents and the user's message, provide a helpful and concise response. If the user is asking about a specific document, you can suggest they use the analysis feature for more details. Do not list the documents again in your response unless asked."""
     else:
         prompt = f"""You are Nexus AI, an intelligent assistant for KMRL (Kochi Metro Rail Limited) document management system. 
         
@@ -122,32 +97,14 @@ User message: {user_message}
 
 Please help the user with their query and suggest they upload documents if they need document-specific assistance."""
     
-<<<<<<< HEAD
-=======
-=======
-    # Prepare document info for prompt
-    doc_summaries = ""
-    if isinstance(docs, list) and len(docs) > 0:
-        doc_summaries = "
-".join([f"Title: {doc.title}, Description: {doc.description}" for doc in docs])
-        prompt = f"You are an assistant. Here are some document titles and descriptions: {doc_summaries}.
-User message: {user_message}"
-    else:
-        prompt = f"You are an assistant. No documents are available. Please answer the user's question: {user_message}"
->>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         gemini_response = model.generate_content(prompt)
         response_text = gemini_response.text if hasattr(gemini_response, 'text') else str(gemini_response)
     except Exception as e:
         response_text = f"Gemini API error: {e}"
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
     
-    return {"response": response_text, "documents": docs}
+    return {"response": response_text}
 
 @app.post("/analyze-document")
 async def analyze_document(request: DocumentAnalysisRequest):
@@ -232,13 +189,6 @@ async def get_documents_summary():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting documents summary: {str(e)}")
 
-<<<<<<< HEAD
-=======
-=======
-    return {"response": response_text, "documents": docs}
-
->>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

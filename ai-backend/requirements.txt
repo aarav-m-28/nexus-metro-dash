@@ -1,21 +1,8 @@
 fastapi
 uvicorn
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
 google-generativeai
 python-dotenv
 requests
 supabase
 PyPDF2
-python-magic
-python-magic-bin
 pypdf
-<<<<<<< HEAD
-=======
-=======
-langchain
-google-generativeai
->>>>>>> cfd1ebe2a973c94df3d5a452d6505f2168c6e4e0
->>>>>>> 7e7117a3214fe85eeb293afdca7dd9ab94e6b343
