@@ -55,6 +55,7 @@ if not GOOGLE_API_KEY:
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
+    print("Received request for /chat")
     user_message = request.message
     # --- Document fetching is temporarily disabled. The chatbot will act as a simple conversational AI. ---
     prompt = f"""You are Nexus AI, an intelligent assistant for KMRL (Kochi Metro Rail Limited). 
@@ -70,19 +71,23 @@ async def chat_endpoint(request: ChatRequest):
         gemini_response = model.generate_content(prompt)
         response_text = gemini_response.text if hasattr(gemini_response, 'text') else str(gemini_response)
     except Exception as e:
+        print(f"Error in /chat endpoint: {e}")
         response_text = f"Gemini API error: {e}"
     
     return {"response": response_text}
 
 @app.post("/analyze-document")
 async def analyze_document(request: DocumentAnalysisRequest):
+    print(f"Received request for /analyze-document for document_id: {request.document_id}")
     """Analyze a specific document and return its content."""
     try:
         doc_content = document_processor.get_document_content(request.document_id)
         if not doc_content:
+            print(f"Document not found for id: {request.document_id}")
             raise HTTPException(status_code=404, detail="Document not found")
         
         if doc_content.get('error'):
+            print(f"Error getting document content: {doc_content.get('error')}")
             return {"error": doc_content['error'], "document": doc_content}
         
         # Create AI analysis of the document
@@ -109,6 +114,7 @@ Please provide:
             analysis_response = model.generate_content(analysis_prompt)
             analysis_text = analysis_response.text if hasattr(analysis_response, 'text') else str(analysis_response)
         except Exception as e:
+            print(f"Error during Gemini analysis: {e}")
             analysis_text = f"Analysis error: {e}"
         
         return {
@@ -117,30 +123,37 @@ Please provide:
         }
         
     except Exception as e:
+        print(f"Error in /analyze-document endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error analyzing document: {str(e)}")
 
 @app.post("/search-documents")
 async def search_documents(request: DocumentSearchRequest):
+    print(f"Received request for /search-documents with query: {request.query}")
     """Search documents by query."""
     try:
         results = document_processor.search_documents(request.query, request.limit)
         return {"documents": results, "query": request.query}
     except Exception as e:
+        print(f"Error in /search-documents endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error searching documents: {str(e)}")
 
 @app.get("/document/{document_id}")
 async def get_document(document_id: str):
+    print(f"Received request for /document/{document_id}")
     """Get document details and content."""
     try:
         doc_content = document_processor.get_document_content(document_id)
         if not doc_content:
+            print(f"Document not found for id: {document_id}")
             raise HTTPException(status_code=404, detail="Document not found")
         return doc_content
     except Exception as e:
+        print(f"Error in /document/{document_id} endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting document: {str(e)}")
 
 @app.get("/documents/summary")
 async def get_documents_summary():
+    print("Received request for /documents/summary")
     """Get summary of all documents for AI processing."""
     try:
         # Fetch documents directly from Supabase
@@ -156,6 +169,7 @@ async def get_documents_summary():
         
         return {"documents": summaries, "total": len(docs)}
     except Exception as e:
+        print(f"Error in /documents/summary endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting documents summary: {str(e)}")
 
 if __name__ == "__main__":
