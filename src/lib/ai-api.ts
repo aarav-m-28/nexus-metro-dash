@@ -47,7 +47,10 @@ interface DocumentsSummaryResponse {
   error?: string;
 }
 
-const AI_BACKEND_URL = import.meta.env.VITE_AI_BACKEND_URL || 'http://localhost:8000';
+const AI_BACKEND_URL =
+  import.meta.env.PROD && import.meta.env.VITE_AI_BACKEND_URL
+    ? import.meta.env.VITE_AI_BACKEND_URL
+    : 'http://localhost:8000';
 
 export class AIApiService {
   private static instance: AIApiService;
