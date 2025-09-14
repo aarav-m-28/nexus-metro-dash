@@ -56,37 +56,14 @@ if not GOOGLE_API_KEY:
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     user_message = request.message
+    # --- Document fetching is temporarily disabled. The chatbot will act as a simple conversational AI. ---
+    prompt = f"""You are Nexus AI, an intelligent assistant for KMRL (Kochi Metro Rail Limited). 
+    You are currently in a simple conversational mode and cannot access documents.
     
-    # Fetch a limited number of recent documents for context to avoid overly large prompts
-    try:
-        docs_response = supabase.table('documents').select('*').order('created_at', desc=True).limit(10).execute()
-        docs = docs_response.data
-    except Exception as e:
-        docs = []
-        print(f"Could not fetch documents for chat context: {e}")
-
-    doc_summaries = ""
-    if isinstance(docs, list) and len(docs) > 0:
-        doc_summaries = "\n".join([
-            f"- Title: {doc.get('title', 'Untitled')} (Department: {doc.get('department', 'N/A')}, Priority: {doc.get('priority', 'N/A')})"
-            for doc in docs
-        ])
-        prompt = f"""You are Nexus AI, an intelligent assistant for KMRL (Kochi Metro Rail Limited) document management system. 
-        
-Available documents:
-{doc_summaries}
-
-User message: {user_message}
-
-Based on the available documents and the user's message, provide a helpful and concise response. If the user is asking about a specific document, you can suggest they use the analysis feature for more details. Do not list the documents again in your response unless asked."""
-    else:
-        prompt = f"""You are Nexus AI, an intelligent assistant for KMRL (Kochi Metro Rail Limited) document management system. 
-        
-No documents are currently available in the system.
-
-User message: {user_message}
-
-Please help the user with their query and suggest they upload documents if they need document-specific assistance."""
+    User message: {user_message}
+    
+    Provide a helpful, general-purpose response. If the user asks about documents, 
+    inform them that document-related features are temporarily unavailable."""
     
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')

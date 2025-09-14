@@ -116,6 +116,8 @@ class DocumentProcessor:
         try:
             # Use a single query with an 'or' filter for efficiency.
             # This searches for the query in either the title or the description.
+            # The `or_` filter combines multiple conditions, and `ilike` provides
+            # a case-insensitive search for the query string within the specified columns.
             response = (
                 self.supabase.table('documents')
                 .select('*')
