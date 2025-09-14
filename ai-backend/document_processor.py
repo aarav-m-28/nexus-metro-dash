@@ -114,48 +114,44 @@ class DocumentProcessor:
     def search_documents(self, query: str, limit: int = 10) -> list:
         """Search documents by title, description, or content."""
         try:
-            # Search in document metadata
-            response = self.supabase.table('documents').select('*').ilike('title', f'%{query}%').limit(limit).execute()
-            documents = response.data or []
-            
-            # Also search in descriptions
-            desc_response = self.supabase.table('documents').select('*').ilike('description', f'%{query}%').limit(limit).execute()
-            desc_docs = desc_response.data or []
-            
-            # Combine and deduplicate
-            all_docs = documents + [doc for doc in desc_docs if doc['id'] not in [d['id'] for d in documents]]
-            
-            return all_docs[:limit]
+            # Use a single query with an 'or' filter for efficiency.
+            # This searches for the query in either the title or the description.
+            response = (
+                self.supabase.table('documents')
+                .select('*')
+                .or_(f'title.ilike.%{query}%,description.ilike.%{query}%')
+                .limit(limit)
+                .execute()
+            )
+            return response.data or []
             
         except Exception as e:
             print(f"Error searching documents: {e}")
             return []
     
     def get_document_summary(self, document_id: str) -> Optional[Dict[str, Any]]:
-        """Get a summary of document content for AI processing."""
-        doc_content = self.get_document_content(document_id)
-        if not doc_content or doc_content.get('error'):
-            return doc_content
-        
-        # Create a summary for AI processing
-        summary = {
-            'id': doc_content['id'],
-            'title': doc_content['title'],
-            'description': doc_content['description'],
-            'department': doc_content.get('department', ''),
-            'priority': doc_content.get('priority', ''),
-            'file_type': doc_content['file_type'],
-            'file_name': doc_content.get('file_name', ''),
-            'created_at': doc_content.get('created_at', ''),
-            'content_preview': '',
-            'has_file_content': bool(doc_content.get('extracted_content')),
-            'file_content_length': 0
-        }
-        
-        # Add content preview
-        content = doc_content.get('content', '') or doc_content.get('extracted_content', '')
-        if content:
-            summary['content_preview'] = content[:500] + '...' if len(content) > 500 else content
-            summary['file_content_length'] = len(content)
-        
-        return summary
+        """
+        Fetches a brief summary of a document by its ID directly from the database.
+        This is a lightweight and efficient alternative to get_document_content.
+        """
+        try:
+            # Select only the fields needed for a summary to avoid downloading files.
+            result = self.supabase.table('documents').select(
+                'id, title, description, department, priority, file_type, file_name, created_at, storage_path'
+            ).eq('id', document_id).single().execute()
+
+            if result.data:
+                doc = result.data
+                # Create a summary object matching the frontend's expectations.
+                summary = {
+                    **doc,
+                    'content_preview': (doc.get('description') or 'No description available.')[:200] + '...',
+                    'has_file_content': bool(doc.get('storage_path')),
+                    'file_content_length': 0  # This can't be determined without downloading.
+                }
+                return summary
+            else:
+                return None
+        except Exception as e:
+            print(f"Error fetching document summary for {document_id}: {e}")
+            return None
