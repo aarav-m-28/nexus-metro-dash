@@ -166,12 +166,13 @@ async def get_document(document_id: str):
 async def get_documents_summary():
     """Get summary of all documents for AI processing."""
     try:
-        docs = fetch_documents()
-        if isinstance(docs, dict) and docs.get('error'):
-            return {"error": docs['error']}
+        # Fetch documents directly from Supabase
+        docs_response = supabase.table('documents').select('id').order('created_at', desc=True).execute()
+        docs = docs_response.data
         
         summaries = []
-        for doc in docs[:10]:  # Limit to first 10 documents for performance
+        # Process a limited number of recent documents for performance
+        for doc in docs[:20]:
             summary = document_processor.get_document_summary(doc['id'])
             if summary:
                 summaries.append(summary)
