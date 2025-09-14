@@ -22,15 +22,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Initialize document processor
 document_processor = DocumentProcessor(SUPABASE_URL, SUPABASE_KEY)
 
-# Function to fetch documents from Supabase
-def fetch_documents():
-    try:
-        response = supabase.table('documents').select('*').execute()
-        return response.data
-    except Exception as e:
-        return {"error": str(e)}
-
-
 app = FastAPI()
 
 # Allow CORS for frontend
