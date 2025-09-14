@@ -1,5 +1,10 @@
 
+import sys
 import os
+
+# Add the ai-backend directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from dotenv import load_dotenv
 load_dotenv()
 import requests
