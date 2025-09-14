@@ -47,7 +47,9 @@ interface DocumentsSummaryResponse {
   error?: string;
 }
 
-const AI_BACKEND_URL = import.meta.env.VITE_AI_BACKEND_URL || 'http://localhost:8000';
+// Use the VITE_AI_BACKEND_URL if it's defined, otherwise fallback based on environment.
+// In production (PROD), it will default to '/api', ensuring it uses the Vercel backend.
+const AI_BACKEND_URL = import.meta.env.VITE_AI_BACKEND_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000');
 
 export class AIApiService {
   private static instance: AIApiService;

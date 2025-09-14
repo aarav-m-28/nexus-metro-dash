@@ -71,7 +71,7 @@ export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUse
       // Reset to default when closing if it was pre-filled
       setShareMethod("internal");
     }
-    if (isOpen && shareMethod === "personal" && allProfiles.length === 0) {
+    if (isOpen && allProfiles.length === 0) {
       const fetchProfiles = async () => {
         const { data, error } = await supabase.from('profiles').select('*').returns<Profile[]>();
         if (error) {
@@ -82,7 +82,7 @@ export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUse
       };
       fetchProfiles();
     }
-  }, [isOpen, shareMethod, allProfiles.length, preselectedUser]);
+  }, [isOpen, allProfiles.length, preselectedUser]);
 
   const handleAddDepartment = (dept: string) => {
     if (!selectedDepartments.includes(dept)) {

@@ -16,7 +16,6 @@
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/ai-backend/main.py" },
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/api/(.*)", "dest": "ai-backend/main.py" }
   ]
 }
