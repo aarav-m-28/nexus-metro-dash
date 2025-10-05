@@ -41,7 +41,9 @@ export function useProfile() {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          await createProfile();
+          // Profile not found, probably being created by the trigger.
+          // The user might need to refresh or we can implement a retry mechanism.
+          console.warn('[useProfile] Profile not found. It might be under creation.');
         } else {
           throw error;
         }

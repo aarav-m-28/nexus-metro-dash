@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Bell, LogOut, User } from "lucide-react";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { Bell } from "lucide-react";
 import { FileUploadModal } from "@/components/upload/FileUploadModal";
-import { NotificationPanel } from "@/components/notifications/NotificationPanel";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 
 interface DashboardHeaderProps {
   filter: 'all' | 'sharedByMe' | 'sharedWithMe';
@@ -19,116 +13,51 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
-  const { user, signOut } = useAuth();
   const { profile } = useProfile();
-
-  const handleLogout = async () => {
-    console.log('[DashboardHeader] logout click - current user:', user?.email);
-    try {
-      const { error } = await signOut();
-      console.log('[DashboardHeader] signOut result:', { error });
-      
-      if (error) {
-        console.warn('[DashboardHeader] logout error', error);
-      }
-
-      console.log('[DashboardHeader] logout successful, forcing page reload');
-      
-      // Clear all auth-related data
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Force complete page reload to reset all state
-      window.location.href = '/#/login';
-      
-    } catch (e) {
-      console.error('[DashboardHeader] logout unexpected error', e);
-      // Even on error, force reload to reset state
-      window.location.href = '/#/login';
-    }
-  };
+  const { user } = useAuth();
 
   return (
-    <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 p-6 animate-fade-in-0 sticky top-0 z-10">
-      {/* Page Title */}
-      <div className="flex items-center justify-between mb-6">
+    <>
+      <header className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-white">Welcome back, {profile?.display_name || user?.email}</h2>
+          <p className="text-gray-400">Here's what's happening with your documents.</p>
+        </div>
         <div className="flex items-center gap-4">
-          <div className="md:hidden">
-            <SidebarTrigger />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Welcome back, {profile?.display_name || user?.email || "User"}</h1>
-            <p className="text-sm text-muted-foreground">Here's what's happening with your documents.</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
+          <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
           <NotificationPanel>
-            <Button variant="ghost" size="icon" className="relative group hover:scale-105 transition-all duration-200">
-              <Bell className="w-5 h-5 transition-colors" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-urgent rounded-full animate-pulse"></span>
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-urgent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
-            </Button>
+            <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors relative">
+              <Bell className="w-6 h-6" />
+              <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+            </button>
           </NotificationPanel>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={profile?.avatar_url || ""} alt={profile?.display_name || ""} />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{profile?.display_name || user?.email}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="h-10 w-10 bg-indigo-500 rounded-full flex items-center justify-center font-bold text-white text-lg">
+            {(profile?.display_name || user?.email || 'U').charAt(0).toUpperCase()}
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Action Bar */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 flex items-center gap-2">
-          <Button
-            onClick={() => onFilterChange('all')}
-            variant={filter === 'all' ? 'secondary' : 'ghost'}
-            size="sm"
-            className={cn("transition-all duration-200", { "shadow-lg shadow-primary/20 ring-2 ring-primary/50": filter === 'all' })}
-          >All Documents</Button>
-          <Button
-            onClick={() => onFilterChange('sharedByMe')}
-            variant={filter === 'sharedByMe' ? 'secondary' : 'ghost'}
-            size="sm"
-            className={cn("transition-all duration-200", { "shadow-lg shadow-primary/20 ring-2 ring-primary/50": filter === 'sharedByMe' })}
-          >Shared By Me</Button>
-          <Button
-            onClick={() => onFilterChange('sharedWithMe')}
-            variant={filter === 'sharedWithMe' ? 'secondary' : 'ghost'}
-            size="sm"
-            className={cn("transition-all duration-200", { "shadow-lg shadow-primary/20 ring-2 ring-primary/50": filter === 'sharedWithMe' })}
-          >Shared With Me</Button>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2 border-b border-gray-700">
+          <button onClick={() => onFilterChange('all')} className={`px-4 py-2 font-semibold ${filter === 'all' ? 'text-white border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white transition-colors'}`}>All Documents</button>
+          <button onClick={() => onFilterChange('sharedByMe')} className={`px-4 py-2 font-semibold ${filter === 'sharedByMe' ? 'text-white border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white transition-colors'}`}>Shared By Me</button>
+          <button onClick={() => onFilterChange('sharedWithMe')} className={`px-4 py-2 font-semibold ${filter === 'sharedWithMe' ? 'text-white border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white transition-colors'}`}>Shared With Me</button>
         </div>
-          <Button type="button" onClick={() => setUploadOpen(true)} className="gap-2">
-            Upload Document
-          </Button>
-          <FileUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
+        <Button onClick={() => setUploadOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+          <span>Upload Document</span>
+        </Button>
       </div>
-    </div>
+      <FileUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
+    </>
   );
 }

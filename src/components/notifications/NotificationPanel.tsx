@@ -1,23 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bell, Check, X, FileText, Users, AlertTriangle, Clock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
   type: "document" | "system" | "approval" | "deadline";
   title: string;
   message: string;
-  timestamp: string;
-  isRead: boolean;
+  created_at: string;
+  is_read: boolean;
   priority: "low" | "medium" | "high";
-  actionRequired?: boolean;
+  action_required?: boolean;
 }
-
-// No hardcoded notifications - will be fetched from Supabase
 
 const notificationIcons = {
   document: FileText,
@@ -39,27 +39,67 @@ interface NotificationPanelProps {
 export function NotificationPanel({ children }: NotificationPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setNotifications(data || []);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to fetch notifications.", variant: "destructive" });
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, isRead: true }))
-    );
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+      if (error) throw error;
+      fetchNotifications();
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to mark notification as read.", variant: "destructive" });
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const markAllAsRead = async () => {
+    try {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
+      if (error) throw error;
+      fetchNotifications();
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to mark all notifications as read.", variant: "destructive" });
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
+  const deleteNotification = async (id: string) => {
+    try {
+      const { error } = await supabase.from('notifications').delete().eq('id', id);
+      if (error) throw error;
+      fetchNotifications();
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to delete notification.", variant: "destructive" });
+    }
+  };
+
+  const clearAll = async () => {
+    try {
+      const { error } = await supabase.from('notifications').delete().neq('id', '0'); // Hack to delete all rows
+      if (error) throw error;
+      setNotifications([]);
+    } catch (error: any) {
+      toast({ title: "Error", description: "Failed to clear all notifications.", variant: "destructive" });
+    }
   };
 
   return (
@@ -120,13 +160,13 @@ export function NotificationPanel({ children }: NotificationPanelProps) {
                     key={notification.id}
                     className={cn(
                       "group relative p-4 rounded-lg border transition-all duration-200 hover:shadow-md cursor-pointer",
-                      notification.isRead 
+                      notification.is_read 
                         ? "bg-background border-border/50" 
                         : "bg-card border-primary/20 hover:border-primary/40"
                     )}
                     onClick={() => markAsRead(notification.id)}
                   >
-                    {!notification.isRead && (
+                    {!notification.is_read && (
                       <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
                     )}
                     
@@ -142,11 +182,11 @@ export function NotificationPanel({ children }: NotificationPanelProps) {
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <h4 className={cn(
                             "font-medium text-sm leading-tight",
-                            notification.isRead ? "text-muted-foreground" : "text-foreground"
+                            notification.is_read ? "text-muted-foreground" : "text-foreground"
                           )}>
                             {notification.title}
                           </h4>
-                          {notification.actionRequired && (
+                          {notification.action_required && (
                             <Badge className="bg-warning text-warning-foreground text-xs">
                               Action needed
                             </Badge>
@@ -159,11 +199,11 @@ export function NotificationPanel({ children }: NotificationPanelProps) {
                         
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
-                            {notification.timestamp}
+                            {new Date(notification.created_at).toLocaleString()}
                           </span>
                           
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {!notification.isRead && (
+                            {!notification.is_read && (
                               <Button
                                 variant="ghost"
                                 size="sm"

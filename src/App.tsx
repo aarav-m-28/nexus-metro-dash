@@ -16,6 +16,8 @@ import CompleteProfile from "./pages/CompleteProfile";
 import NotFound from "./pages/NotFound";
 import { SignatureRequests } from "./pages/SignatureRequests";
 import PermissionsPage from "./pages/Permissions";
+import FacultyAssignments from "./pages/FacultyAssignments";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error?: any }>{
@@ -66,49 +68,56 @@ const App = () => {
           <Sonner />
           <ErrorBoundary>
             <HashRouter>
-              <RouteLogger>
-                <Routes>
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/login" element={<LoginAnimated />} />
-                  <Route path="/search" element={
-                    <ProtectedRoute>
-                      <Search />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/settings" element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/profile/:userId" element={
-                    <ProtectedRoute>
-                      <ProfilePage />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/signature-requests" element={
-                    <ProtectedRoute>
-                      <SignatureRequests />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/permissions" element={
-                    <ProtectedRoute>
-                      <PermissionsPage />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/login" element={<LoginAnimated />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/complete-profile/:role" element={
-                    <ProtectedRoute>
-                      <CompleteProfile />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </RouteLogger>
+              <SidebarProvider>
+                <RouteLogger>
+                  <Routes>
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/login" element={<LoginAnimated />} />
+                    <Route path="/search" element={
+                      <ProtectedRoute>
+                        <Search />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/settings" element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile/:userId" element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/signature-requests" element={
+                      <ProtectedRoute>
+                        <SignatureRequests />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/permissions" element={
+                      <ProtectedRoute>
+                        <PermissionsPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/faculty-assignments" element={
+                      <ProtectedRoute>
+                        <FacultyAssignments />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/login" element={<LoginAnimated />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/complete-profile/:role" element={
+                      <ProtectedRoute>
+                        <CompleteProfile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </RouteLogger>
+              </SidebarProvider>
             </HashRouter>
           </ErrorBoundary>
         </TooltipProvider>

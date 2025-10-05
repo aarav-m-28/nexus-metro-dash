@@ -15,6 +15,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EditDocumentModal } from "@/components/documents/EditDocumentModal";
+import { Button } from "@/components/ui/button";
+import { FilePlus } from "lucide-react";
+import { FileUploadModal } from "@/components/upload/FileUploadModal";
 
 interface DocumentListProps {
   filter: 'all' | 'sharedByMe' | 'sharedWithMe';
@@ -26,6 +29,7 @@ export function DocumentList({ filter }: DocumentListProps) {
   const { profile } = useProfile();
   const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   if (loading) {
     return (
@@ -36,7 +40,7 @@ export function DocumentList({ filter }: DocumentListProps) {
             <p className="text-sm text-muted-foreground">Loading documents...</p>
           </div>
         </div>
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="p-4 rounded-lg border">
               <Skeleton className="h-6 w-3/4 mb-2" />
@@ -44,19 +48,6 @@ export function DocumentList({ filter }: DocumentListProps) {
               <Skeleton className="h-4 w-1/4" />
             </div>
           ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (documents.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Recent Documents</h2>
-            <p className="text-sm text-muted-foreground">No documents found</p>
-          </div>
         </div>
       </div>
     );
@@ -79,6 +70,24 @@ export function DocumentList({ filter }: DocumentListProps) {
     // "Shared with me" is simply all accessible documents that the user does not own.
     filteredDocs = accessibleDocs.filter(doc => doc.user_id !== user?.id);
   }
+  
+  if (filteredDocs.length === 0) {
+    return (
+      <>
+        <div className="text-center p-12 border-2 border-dashed rounded-lg">
+          <FilePlus className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 text-lg font-medium text-foreground">No documents found</h3>
+          <p className="mt-2 text-sm text-muted-foreground">Get started by uploading a new document.</p>
+          <div className="mt-6">
+            <Button onClick={() => setUploadOpen(true)}>
+              Upload Document
+            </Button>
+          </div>
+        </div>
+        <FileUploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -94,7 +103,7 @@ export function DocumentList({ filter }: DocumentListProps) {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredDocs.map((doc, index) => (
           <div 
             key={doc.id}

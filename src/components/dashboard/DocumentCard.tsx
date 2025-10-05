@@ -44,15 +44,15 @@ interface DocumentCardProps {
 
 const priorityConfig = {
   URGENT: {
-    className: "bg-urgent text-urgent-foreground hover:bg-urgent/90",
+    className: "bg-red-500/10 text-red-400",
     label: "URGENT"
   },
   HIGH: {
-    className: "bg-high text-high-foreground hover:bg-high/90",
+    className: "bg-yellow-500/10 text-yellow-400",
     label: "HIGH"
   },
   ROUTINE: {
-    className: "bg-routine text-routine-foreground hover:bg-routine/90",
+    className: "bg-blue-500/10 text-blue-400",
     label: "ROUTINE"
   }
 };
@@ -78,14 +78,12 @@ export function DocumentCard({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRequestSignatureModal, setShowRequestSignatureModal] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
   const { profile } = useProfile();
 
   const handleViewDocument = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (storagePath) {
-      console.log('[DocumentCard] storagePath:', storagePath);
       const url = await getDocumentUrl(storagePath);
       setPdfUrl(url);
     }
@@ -94,7 +92,6 @@ export function DocumentCard({
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
     toast({
       title: "Download not available",
       description: "File download feature will be implemented with Supabase storage",
@@ -114,153 +111,65 @@ export function DocumentCard({
   
   return (
     <>
-      <Card 
-        className={cn(
-          "group relative overflow-hidden border border-border/50 transition-all duration-300 cursor-pointer",
-          "hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 hover:-translate-y-1",
-          "bg-gradient-to-br from-card to-card/80 backdrop-blur-sm"
-        )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleViewDocument}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="bg-gray-800/50 border border-gray-700/80 p-5 rounded-xl flex flex-col gap-4 hover:border-indigo-500/50 transition-all duration-300 group overflow-hidden" onClick={handleViewDocument}>
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <FileText className="h-8 w-8 text-blue-400" />
+            <span className="text-sm font-medium text-gray-400">{fileType}</span>
+          </div>
+          <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", config.className)}>{config.label}</span>
+        </div>
         
-        <CardContent className="relative p-5">
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <Badge className={cn(
-                "text-xs font-medium px-2 py-1 transition-transform duration-200", 
-                config.className,
-                "group-hover:scale-105"
-              )}>
-                {config.label}
-              </Badge>
-              
-              <div className={cn(
-                "flex items-center gap-1 transition-all duration-200",
-                isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
-              )}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 hover:bg-primary/10"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="w-3 h-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-background border-border shadow-lg">
-                    {isOwner && (
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit();
-                        }}
-                        className="hover:bg-accent">
-                        <Edit className="w-3 h-3 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleDownload} className="hover:bg-accent">
-                      <Download className="w-3 h-3 mr-2" />
-                      Download
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleShare} className="hover:bg-accent">
-                      <Share2 className="w-3 h-3 mr-2" />
-                      Share
-                    </DropdownMenuItem>
-                    {profile?.role === 'student' && (
-                      <DropdownMenuItem onClick={handleRequestSignature} className="hover:bg-accent">
-                        <FileSignature className="w-3 h-3 mr-2" />
-                        Request Signature
-                      </DropdownMenuItem>
-                    )}
-                    {isOwner && (
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete();
-                        }}
-                        className="text-red-500 hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600">
-                        <Trash2 className="w-3 h-3 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+        <h4 className="text-lg font-bold text-white truncate">{title}</h4>
+        
+        <div className="border-t border-gray-700/60 pt-4 space-y-3 text-sm">
+          <div className="flex items-center gap-3 text-gray-300">
+            <Calendar className="h-5 w-5 text-gray-500" />
+            <span>{uploadDate}</span>
+          </div>
+          <div className="flex items-center gap-3 text-gray-300">
+            <User className="h-5 w-5 text-gray-500" />
+            <span>{uploader}</span>
+          </div>
+          <div className="flex items-center gap-3 text-gray-300">
+            <FileText className="h-5 w-5 text-gray-500" />
+            <span>Course: <span className="font-medium text-gray-200">{course}</span></span>
+          </div>
+          {language && (
+            <div className="flex items-center gap-3 text-gray-300">
+              <Users className="h-5 w-5 text-gray-500" />
+              <span>Language: <span className="font-medium text-gray-200">{language}</span></span>
             </div>
+          )}
+        </div>
 
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className={cn(
-                "p-2 rounded-lg bg-primary/5 border border-primary/10 transition-colors duration-200",
-                "group-hover:bg-primary/10 group-hover:border-primary/20"
-              )}>
-                <FileText className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-xs font-medium bg-muted px-2 py-1 rounded">{fileType}</span>
-            </div>
-
-            <div className="space-y-1">
-              <h3 className={cn(
-                "font-semibold text-base leading-tight transition-colors duration-200 line-clamp-2",
-                "text-card-foreground group-hover:text-primary"
-              )}>
-                {title}
-              </h3>
-            </div>
-
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded bg-muted">
-                    <Calendar className="w-3 h-3" />
-                  </div>
-                  <span className="text-xs">{uploadDate}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded bg-muted">
-                    <User className="w-3 h-3" />
-                  </div>
-                  <span className="text-xs font-medium">{uploader}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-foreground">Course:</span>
-                  <Badge variant="secondary" className="text-xs">{course}</Badge>
-                </div>
-                {language && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground">Language:</span>
-                    <Badge variant="outline" className="text-xs capitalize">{language}</Badge>
-                  </div>
-                )}
-                
-                <div className="flex items-start gap-2">
-                  <Users className="w-3 h-3 mt-0.5 text-muted-foreground" />
-                  <div className="flex-1">
-                    <span className="text-xs font-medium text-foreground">Shared with: </span> 
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {sharedWith.map((dept, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {dept}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <div className="border-t border-gray-700/60 pt-4 mt-auto">
+          <div className="tooltip">
+            <span className="text-sm text-gray-400">Shared with: <span className="font-semibold text-indigo-400 cursor-pointer">{sharedWith.length} Department{sharedWith.length !== 1 ? 's' : ''}</span></span>
+            <div className="tooltip-text">
+              <span className="font-bold mb-1 block">Departments</span>
+              {sharedWith.map((dept, idx) => <span key={idx}>{dept}</span>)}
             </div>
           </div>
-        </CardContent>
-        
-        <div className="absolute inset-0 rounded-lg border-2 border-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      </Card>
+        </div>
+
+        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isOwner && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>}
+              <DropdownMenuItem onClick={handleDownload}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShare}><Share2 className="mr-2 h-4 w-4" />Share</DropdownMenuItem>
+              {profile?.role === 'student' && <DropdownMenuItem onClick={handleRequestSignature}><FileSignature className="mr-2 h-4 w-4" />Request Signature</DropdownMenuItem>}
+              {isOwner && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-red-500"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       <PDFViewer
         isOpen={showPDFViewer}
