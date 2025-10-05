@@ -65,17 +65,17 @@ export function DocumentList({ filter }: DocumentListProps) {
   // Filtering logic
   const accessibleDocs = documents.filter(doc => {
     const isOwner = doc.user_id === user?.id;
-    const isSharedWithUserDept = profile?.department && Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.department);
+    const isSharedWithUserCourse = profile?.course && Array.isArray(doc.shared_with) && doc.shared_with.includes(profile.course);
     const isSharedWithUser = user?.id && Array.isArray(doc.shared_with_users) && doc.shared_with_users.includes(user.id);
 
-    // A document is accessible if you own it, or it's shared with you or your department.
-    return isOwner || isSharedWithUserDept || isSharedWithUser;
+    // A document is accessible if you own it, or it's shared with you or your course.
+    return isOwner || isSharedWithUserCourse || isSharedWithUser;
   });
 
   let filteredDocs = accessibleDocs;
   if (filter === 'sharedByMe' && user) {
     filteredDocs = accessibleDocs.filter(doc => doc.user_id === user?.id);
-  } else if (filter === 'sharedWithMe' && profile && profile.department) {
+  } else if (filter === 'sharedWithMe' && profile && profile.course) {
     // "Shared with me" is simply all accessible documents that the user does not own.
     filteredDocs = accessibleDocs.filter(doc => doc.user_id !== user?.id);
   }
@@ -110,7 +110,7 @@ export function DocumentList({ filter }: DocumentListProps) {
                 day: 'numeric'
               })}
               uploader={doc.user_id === user?.id ? "You" : (doc.uploader || "Unknown")}
-              department={doc.department || "-"}
+              course={doc.course || "-"}
               sharedWith={Array.isArray(doc.shared_with) && doc.shared_with.length > 0 ? doc.shared_with : (doc.is_public ? ["Public"] : ["Personal"])}
               priority={doc.priority as 'URGENT' | 'HIGH' | 'ROUTINE' || "ROUTINE"}
               fileType={doc.file_type?.split('/')[1]?.toUpperCase() || 'FILE'}

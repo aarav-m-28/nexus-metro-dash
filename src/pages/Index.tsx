@@ -21,8 +21,11 @@ const Index = () => {
         <DashboardSidebar />
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader filter={filter} onFilterChange={setFilter} />
-        <DocumentList filter={filter} />
+        <main className="p-6 bg-background/80 backdrop-blur-sm h-full">
+          <h1 className="text-3xl font-bold mb-6 text-foreground">Dashboard</h1>
+          <DashboardHeader filter={filter} onFilterChange={setFilter} />
+          <DocumentList filter={filter} />
+        </main>
       </SidebarInset>
       <AIChatFAB />
     </SidebarProvider>

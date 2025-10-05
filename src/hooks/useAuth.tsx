@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata: { role: string }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
 }
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role')
         .eq('user_id', user.id)
         .single();
 
@@ -133,20 +133,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             user_id: user.id,
             email: user.email,
             display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || null,
+            role: user.user_metadata?.role || 'student', // default to student
           });
+      } else if (data && !data.role && user.user_metadata?.role) {
+        // Profile exists but role is not set, update it
+        await supabase
+          .from('profiles')
+          .update({ role: user.user_metadata.role })
+          .eq('user_id', user.id);
       }
     } catch (error) {
       console.error('Error ensuring profile:', error);
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata: { role: string }) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
     
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        data: metadata,
         emailRedirectTo: redirectUrl
       }
     });

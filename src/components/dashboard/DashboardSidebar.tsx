@@ -23,14 +23,14 @@ import {
   Settings, 
   FileText,
   LogOut,
-  Building2,
   User,
   Loader2,
   Database,
   RefreshCw,
   ChevronRight,
   Shield,
-  Users2,
+  FileSignature,
+  FilePlus,
 } from "lucide-react";
 
 
@@ -39,19 +39,36 @@ const sidebarItems = [
     title: "Dashboard",
     icon: LayoutDashboard,
     path: "/",
-    badge: null
+    badge: null,
+    roles: ['student', 'faculty_advisor', 'hod'],
+  },
+  {
+    title: "Permissions",
+    icon: FilePlus,
+    path: "/permissions",
+    badge: null,
+    roles: ['student'],
   },
   {
     title: "Search",
     icon: Search,
     path: "/search",
-    badge: null
+    badge: null,
+    roles: ['student', 'faculty_advisor', 'hod'],
+  },
+  {
+    title: "Signature Requests",
+    icon: FileSignature,
+    path: "/signature-requests",
+    badge: null,
+    roles: ['faculty_advisor', 'hod'],
   },
   {
     title: "Settings",
     icon: Settings,
     path: "/settings",
-    badge: null
+    badge: null,
+    roles: ['student', 'faculty_advisor', 'hod'],
   }
 ];
 
@@ -60,12 +77,9 @@ export function DashboardSidebar() {
     id: string;
     user_id: string;
     display_name: string;
-    department: string;
-    job_title: string;
     email: string;
+    role: string;
   }
-  
-  console.log('[DashboardSidebar] Component starting to render');
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -73,63 +87,11 @@ export function DashboardSidebar() {
   const { profile, loading: profileLoading, clearAndRecreateProfile } = useProfile();
   const { state: sidebarState } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [sidebarSearch, setSidebarSearch] = useState("");
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
-  const searchContainerRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchProfiles = async () => {
-      const { data, error } = await supabase.from('profiles').select('*').returns<Profile[]>();
-      if (error) {
-        console.error('Error fetching profiles:', error);
-      } else if (data) {
-        setAllProfiles(data);
-      }
-    };
-    fetchProfiles();
-  }, []);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setIsSearchFocused(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchContainerRef]);
-
-  const filteredProfiles = allProfiles.filter(p =>
-    p.display_name?.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
-    p.email?.toLowerCase().includes(sidebarSearch.toLowerCase())
-  );
-
-  const profilesByDepartment = React.useMemo(() => {
-    const grouped: { [key: string]: Profile[] } = {};
-    allProfiles.forEach(p => {
-        const dept = p.department || 'Uncategorized';
-        if (!grouped[dept]) {
-            grouped[dept] = [];
-        }
-        grouped[dept].push(p);
-    });
-    // sort profiles within each department
-    Object.values(grouped).forEach(profiles => profiles.sort((a, b) => (a.display_name || '').localeCompare(b.display_name || '')));
-    return grouped;
-}, [allProfiles]);
-
-  const handleSidebarSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // You can decide what to do on enter, for now it does nothing
-    // as results are shown live.
-  };
+  
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
     
-    console.log('[DashboardSidebar] Logout initiated');
     setIsLoggingOut(true);
     
     try {
@@ -147,8 +109,6 @@ export function DashboardSidebar() {
         throw error;
       }
 
-      console.log('[DashboardSidebar] SignOut successful');
-      
       // Clear all local storage
       localStorage.clear();
       sessionStorage.clear();
@@ -160,7 +120,6 @@ export function DashboardSidebar() {
       });
 
       // Force navigation to login page
-      console.log('[DashboardSidebar] Redirecting to login');
       window.location.href = '/#/login';
       
     } catch (error) {
@@ -195,9 +154,7 @@ export function DashboardSidebar() {
     if (profile) {
       return {
         name: profile.display_name || user?.email || "User",
-        subtitle: profile.department && profile.job_title 
-          ? `${profile.department} - ${profile.job_title}`
-          : profile.department || profile.job_title || user?.email?.split('@')[0] || "User",
+        subtitle: user?.email?.split('@')[0] || "User",
         initial: (profile.display_name || user?.email || "U").charAt(0).toUpperCase()
       };
     }
@@ -219,16 +176,21 @@ export function DashboardSidebar() {
 
   const userInfo = getUserDisplayInfo();
 
+  const visibleSidebarItems = sidebarItems.filter(item => {
+    if (!profile || !profile.role) return false;
+    return item.roles.includes(profile.role.toLowerCase());
+  });
+
   return (
     <>
       <SidebarHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-              <Building2 className="h-5 w-5 text-white" />
+              <FileText className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
-              Nexus Metro
+              Nexus
             </span>
           </div>
           <SidebarTrigger className="hidden md:flex" />
@@ -236,68 +198,10 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <div className="relative" ref={searchContainerRef}>
-          <form onSubmit={handleSidebarSearch} className="relative mb-2">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search profiles..."
-              value={sidebarSearch}
-              onChange={(e) => {
-                setSidebarSearch(e.target.value);
-                if (!isSearchFocused) {
-                  setIsSearchFocused(true);
-                }
-              }}
-              onClick={() => setIsSearchFocused(true)}
-              className="h-9 pl-8"
-            />
-          </form>
-          {isSearchFocused && (
-            <div className="absolute z-20 w-full mt-1 bg-background border rounded-md shadow-lg max-h-64 overflow-y-auto">
-              {sidebarSearch ? (
-                <div className="p-2 space-y-1">
-                  <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase">Profiles ({filteredProfiles.length})</h3>
-                  {filteredProfiles.map(p => (
-                    <Button key={p.id} variant="ghost" className="w-full justify-start gap-2 h-auto py-2" onClick={() => { navigate(`/profile/${p.user_id}`); setIsSearchFocused(false); }}>
-                      <User className="h-4 w-4" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-sm">{p.display_name}</span>
-                        <span className="text-xs text-muted-foreground">{p.department}</span>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-2 space-y-1">
-                  <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase">All Profiles</h3>
-                  {Object.keys(profilesByDepartment).sort().map(dept => (
-                    <div key={dept} className="mt-1">
-                      <h4 className="px-2 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{dept}</h4>
-                      {profilesByDepartment[dept].map(p => (
-                        <Button
-                          key={p.id}
-                          variant="ghost"
-                          className="w-full justify-start gap-2 h-auto py-2 leading-tight"
-                          onClick={() => { navigate(`/profile/${p.user_id}`); setIsSearchFocused(false); }}
-                        >
-                          <User className="h-4 w-4" />
-                          <div className="flex flex-col items-start">
-                            <span className="text-sm leading-tight">{p.display_name}</span>
-                            <span className="text-xs text-muted-foreground">{p.job_title || 'No title'}</span>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        
 
         <SidebarMenu>
-          {sidebarItems.map((item) => (
+          {visibleSidebarItems.map((item) => (
             <SidebarMenuItem key={item.path}>
               <NavLink to={item.path} className="w-full">
                 {({ isActive }) => (

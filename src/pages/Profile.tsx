@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mail, Building2, AlertTriangle, FileUp, Upload } from "lucide-react";
+import { Mail, Building2, AlertTriangle, Book, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Document, useDocuments } from "@/hooks/useDocuments";
@@ -26,9 +26,14 @@ interface ProfileData {
   user_id: string;
   display_name: string;
   email: string;
-  department: string;
-  job_title: string;
   avatar_url: string;
+  role: string;
+  course: string;
+  section: string;
+  year: number;
+  department: string;
+  subjects: string;
+  classes: string;
 }
 
 const ProfilePage = () => {
@@ -123,24 +128,31 @@ const ProfilePage = () => {
                       <AvatarImage src={profile.avatar_url} alt={profile.display_name} />
                       <AvatarFallback className="text-2xl">{profile.display_name?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div>
+                  <div>
                       <CardTitle className="text-3xl">{profile.display_name}</CardTitle>
-                      <CardDescription className="text-md">{profile.job_title || 'No title specified'}</CardDescription>
+                      <CardDescription className="text-md">{profile.role || 'No role specified'}</CardDescription>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => setSelectDocModalOpen(true)} className="gap-2">
-                      <FileUp className="w-4 h-4" /> Share Document
-                    </Button>
-                    <Button type="button" onClick={() => setUploadOpen(true)} className="gap-2">
-                      <Upload className="w-4 h-4" /> Upload Document
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="grid gap-4 mt-4">
                 <div className="flex items-center gap-3"><Mail className="w-5 h-5 text-muted-foreground" /><span>{profile.email}</span></div>
-                <div className="flex items-center gap-3"><Building2 className="w-5 h-5 text-muted-foreground" /><span>{profile.department || 'No department specified'}</span></div>
+                {profile.role === 'student' && (
+                  <>
+                    <div className="flex items-center gap-3"><Building2 className="w-5 h-5 text-muted-foreground" /><span>{profile.course || 'No course specified'}</span></div>
+                    <div className="flex items-center gap-3"><span className="font-semibold">Section:</span><span>{profile.section || 'N/A'}</span></div>
+                    <div className="flex items-center gap-3"><span className="font-semibold">Year:</span><span>{profile.year || 'N/A'}</span></div>
+                  </>
+                )}
+                {profile.role === 'hod' && (
+                  <div className="flex items-center gap-3"><Building2 className="w-5 h-5 text-muted-foreground" /><span>{profile.department || 'No department specified'}</span></div>
+                )}
+                {profile.role === 'teacher' && (
+                  <>
+                    <div className="flex items-center gap-3"><Book className="w-5 h-5 text-muted-foreground" /><span>{profile.subjects || 'No subjects specified'}</span></div>
+                    <div className="flex items-center gap-3"><Users className="w-5 h-5 text-muted-foreground" /><span>{profile.classes || 'No classes specified'}</span></div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}

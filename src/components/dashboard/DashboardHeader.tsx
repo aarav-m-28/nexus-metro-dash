@@ -6,9 +6,11 @@ import { FileUploadModal } from "@/components/upload/FileUploadModal";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface DashboardHeaderProps {
   filter: 'all' | 'sharedByMe' | 'sharedWithMe';
@@ -18,6 +20,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
 
   const handleLogout = async () => {
     console.log('[DashboardHeader] logout click - current user:', user?.email);
@@ -53,10 +56,10 @@ export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps
           <div className="md:hidden">
             <SidebarTrigger />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Welcome back, {user?.email || "User"}
-          </p>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Welcome back, {profile?.display_name || user?.email || "User"}</h1>
+            <p className="text-sm text-muted-foreground">Here's what's happening with your documents.</p>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
@@ -73,7 +76,7 @@ export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="" alt={user?.email || ""} />
+                  <AvatarImage src={profile?.avatar_url || ""} alt={profile?.display_name || ""} />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
@@ -83,7 +86,7 @@ export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.email}</p>
+                  <p className="text-sm font-medium leading-none">{profile?.display_name || user?.email}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                   </p>
@@ -106,19 +109,19 @@ export function DashboardHeader({ filter, onFilterChange }: DashboardHeaderProps
             onClick={() => onFilterChange('all')}
             variant={filter === 'all' ? 'secondary' : 'ghost'}
             size="sm"
-            className={`transition-all duration-200 ${filter === 'all' ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}
+            className={cn("transition-all duration-200", { "shadow-lg shadow-primary/20 ring-2 ring-primary/50": filter === 'all' })}
           >All Documents</Button>
           <Button
             onClick={() => onFilterChange('sharedByMe')}
             variant={filter === 'sharedByMe' ? 'secondary' : 'ghost'}
             size="sm"
-            className={`transition-all duration-200 ${filter === 'sharedByMe' ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}
+            className={cn("transition-all duration-200", { "shadow-lg shadow-primary/20 ring-2 ring-primary/50": filter === 'sharedByMe' })}
           >Shared By Me</Button>
           <Button
             onClick={() => onFilterChange('sharedWithMe')}
             variant={filter === 'sharedWithMe' ? 'secondary' : 'ghost'}
             size="sm"
-            className={`transition-all duration-200 ${filter === 'sharedWithMe' ? 'shadow-lg shadow-primary/20 ring-2 ring-primary/50' : ''}`}
+            className={cn("transition-all duration-200", { "shadow-lg shadow-primary/20 ring-2 ring-primary/50": filter === 'sharedWithMe' })}
           >Shared With Me</Button>
         </div>
           <Button type="button" onClick={() => setUploadOpen(true)} className="gap-2">

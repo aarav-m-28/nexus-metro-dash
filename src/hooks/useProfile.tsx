@@ -8,37 +8,28 @@ export interface Profile {
   user_id: string;
   email: string;
   display_name: string | null;
-  department: string | null;
-  job_title: string | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  role: string | null;
+  course: string | null;
+  section: string | null;
+  year: number | null;
 }
 
 export function useProfile() {
-  console.log('[useProfile] Hook initialized');
-  
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  console.log('[useProfile] State initialized:', { 
-    hasUser: !!user, 
-    userEmail: user?.email,
-    profile: profile ? 'exists' : 'null',
-    loading 
-  });
-
   const fetchProfile = async () => {
     if (!user) {
-      console.log('[useProfile] No user, skipping profile fetch');
       setProfile(null);
       setLoading(false);
       return;
     }
     
-    console.log('[useProfile] Fetching profile for user:', user.id);
     setLoading(true);
     
     try {
@@ -48,32 +39,13 @@ export function useProfile() {
         .eq('user_id', user.id)
         .single();
 
-      console.log('[useProfile] Profile fetch result:', { 
-        hasData: !!data, 
-        error: error?.message,
-        data: data ? {
-          id: data.id,
-          display_name: data.display_name,
-          department: data.department,
-          job_title: data.job_title,
-          email: data.email
-        } : null
-      });
-
       if (error) {
         if (error.code === 'PGRST116') {
-          // No profile found, create one
-          console.log('[useProfile] No profile found, creating new one');
           await createProfile();
         } else {
           throw error;
         }
       } else if (data) {
-        console.log('[useProfile] Profile found and set:', {
-          display_name: data.display_name,
-          department: data.department,
-          job_title: data.job_title
-        });
         setProfile(data);
       }
     } catch (error) {
@@ -91,23 +63,12 @@ export function useProfile() {
   const createProfile = async () => {
     if (!user) return;
     
-    console.log('[useProfile] Creating profile for user:', {
-      userId: user.id,
-      email: user.email,
-      displayName: user.user_metadata?.display_name,
-      emailPrefix: user.email?.split('@')[0]
-    });
-    
     try {
       const profileData = {
         user_id: user.id,
         email: user.email,
         display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || null,
-        department: null,
-        job_title: null,
       };
-      
-      console.log('[useProfile] Inserting profile data:', profileData);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -115,20 +76,9 @@ export function useProfile() {
         .select()
         .single();
 
-      console.log('[useProfile] Profile creation result:', { 
-        hasData: !!data, 
-        error: error?.message,
-        data: data ? {
-          display_name: data.display_name,
-          department: data.department,
-          job_title: data.job_title
-        } : null
-      });
-
       if (error) throw error;
       
       setProfile(data);
-      console.log('[useProfile] Profile created and set successfully');
     } catch (error) {
       console.error('[useProfile] Error creating profile:', error);
       toast({
@@ -139,8 +89,17 @@ export function useProfile() {
     }
   };
 
-  const updateProfile = async (updates: Partial<Pick<Profile, 'display_name' | 'department' | 'job_title' | 'avatar_url'>>) => {
+  const updateProfile = async (updates: Partial<Pick<Profile, 'display_name' | 'avatar_url' | 'role' | 'course' | 'section' | 'year'>>) => {
     if (!user || !profile) return null;
+
+    if (profile.role && (profile.role.toLowerCase() === 'student' || profile.role.toLowerCase() === 'studen')) {
+      toast({
+        title: "Permission Denied",
+        description: "Students are not allowed to edit their profile.",
+        variant: "destructive"
+      });
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -173,7 +132,6 @@ export function useProfile() {
   const clearAndRecreateProfile = async () => {
     if (!user) return;
     
-    console.log('[useProfile] Clearing and recreating profile for user:', user.id);
     setLoading(true);
     
     try {
@@ -185,8 +143,6 @@ export function useProfile() {
       
       if (deleteError) {
         console.error('[useProfile] Error deleting profile:', deleteError);
-      } else {
-        console.log('[useProfile] Profile deleted successfully');
       }
       
       // Clear local state

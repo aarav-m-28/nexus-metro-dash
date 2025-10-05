@@ -8,18 +8,20 @@ import {
   Users,
   Calendar,
   User,
-  Eye,
   Download,
   Share2,
   MoreHorizontal,
   Edit,
   Trash2,
+  FileSignature,
 } from "lucide-react";
 import { PDFViewer } from "@/components/documents/PDFViewer";
 import { getDocumentUrl } from "@/lib/getDocumentUrl";
 import { ShareDocumentModal } from "@/components/share/ShareDocumentModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
+import { RequestSignatureModal } from "@/components/documents/RequestSignatureModal";
 
 type Priority = "URGENT" | "HIGH" | "ROUTINE";
 
@@ -28,7 +30,7 @@ interface DocumentCardProps {
   title: string;
   uploadDate: string;
   uploader: string;
-  department: string;
+  course: string;
   sharedWith: string[];
   priority: Priority;
   fileType?: string;
@@ -60,7 +62,7 @@ export function DocumentCard({
   title,
   uploadDate,
   uploader,
-  department,
+  course,
   sharedWith,
   priority,
   fileType = "PDF",
@@ -75,8 +77,10 @@ export function DocumentCard({
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showRequestSignatureModal, setShowRequestSignatureModal] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
+  const { profile } = useProfile();
 
   const handleViewDocument = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,8 +95,6 @@ export function DocumentCard({
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // For now, show a message that download is not implemented
-    // In a real app, this would download from Supabase storage
     toast({
       title: "Download not available",
       description: "File download feature will be implemented with Supabase storage",
@@ -103,6 +105,11 @@ export function DocumentCard({
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowShareModal(true);
+  };
+
+  const handleRequestSignature = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowRequestSignatureModal(true);
   };
   
   return (
@@ -117,12 +124,10 @@ export function DocumentCard({
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleViewDocument}
       >
-        {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <CardContent className="relative p-5">
           <div className="space-y-4">
-            {/* Priority Badge and Actions */}
             <div className="flex items-start justify-between">
               <Badge className={cn(
                 "text-xs font-medium px-2 py-1 transition-transform duration-200", 
@@ -147,7 +152,7 @@ export function DocumentCard({
                       <MoreHorizontal className="w-3 h-3" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40 bg-background border-border shadow-lg">
+                  <DropdownMenuContent align="end" className="w-48 bg-background border-border shadow-lg">
                     {isOwner && (
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -167,6 +172,12 @@ export function DocumentCard({
                       <Share2 className="w-3 h-3 mr-2" />
                       Share
                     </DropdownMenuItem>
+                    {profile?.role === 'student' && (
+                      <DropdownMenuItem onClick={handleRequestSignature} className="hover:bg-accent">
+                        <FileSignature className="w-3 h-3 mr-2" />
+                        Request Signature
+                      </DropdownMenuItem>
+                    )}
                     {isOwner && (
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -183,7 +194,6 @@ export function DocumentCard({
               </div>
             </div>
 
-            {/* File Type Indicator */}
             <div className="flex items-center gap-2 text-muted-foreground">
               <div className={cn(
                 "p-2 rounded-lg bg-primary/5 border border-primary/10 transition-colors duration-200",
@@ -194,7 +204,6 @@ export function DocumentCard({
               <span className="text-xs font-medium bg-muted px-2 py-1 rounded">{fileType}</span>
             </div>
 
-            {/* Document Title */}
             <div className="space-y-1">
               <h3 className={cn(
                 "font-semibold text-base leading-tight transition-colors duration-200 line-clamp-2",
@@ -204,9 +213,7 @@ export function DocumentCard({
               </h3>
             </div>
 
-            {/* Metadata */}
             <div className="space-y-3 text-sm text-muted-foreground">
-              {/* Upload Info */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded bg-muted">
@@ -222,11 +229,10 @@ export function DocumentCard({
                 </div>
               </div>
 
-              {/* Department and Sharing */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-foreground">Department:</span>
-                  <Badge variant="secondary" className="text-xs">{department}</Badge>
+                  <span className="text-xs font-medium text-foreground">Course:</span>
+                  <Badge variant="secondary" className="text-xs">{course}</Badge>
                 </div>
                 {language && (
                   <div className="flex items-center gap-2">
@@ -238,7 +244,7 @@ export function DocumentCard({
                 <div className="flex items-start gap-2">
                   <Users className="w-3 h-3 mt-0.5 text-muted-foreground" />
                   <div className="flex-1">
-                    <span className="text-xs font-medium text-foreground">Shared with: </span>
+                    <span className="text-xs font-medium text-foreground">Shared with: </span> 
                     <div className="flex flex-wrap gap-1 mt-1">
                       {sharedWith.map((dept, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">
@@ -253,24 +259,29 @@ export function DocumentCard({
           </div>
         </CardContent>
         
-        {/* Animated border */}
         <div className="absolute inset-0 rounded-lg border-2 border-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </Card>
 
       <PDFViewer
-  isOpen={showPDFViewer}
-  onClose={() => setShowPDFViewer(false)}
-  documentTitle={title}
-  priority={priority}
-  pdfUrl={pdfUrl}
-  languageTag={language}
-  content={content}
+        isOpen={showPDFViewer}
+        onClose={() => setShowPDFViewer(false)}
+        documentTitle={title}
+        priority={priority}
+        pdfUrl={pdfUrl}
+        languageTag={language}
+        content={content}
       />
 
       <ShareDocumentModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         documentTitle={title}
+      />
+
+      <RequestSignatureModal
+        isOpen={showRequestSignatureModal}
+        onClose={() => setShowRequestSignatureModal(false)}
+        documentId={id}
       />
     </>
   );

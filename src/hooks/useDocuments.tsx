@@ -15,7 +15,7 @@ export interface Document {
   created_at: string;
   updated_at: string;
   user_id?: string;
-  department?: string;
+  course?: string;
   priority?: string;
   content?: string;
   language?: string;
@@ -27,7 +27,7 @@ export type DocumentUpdatePayload = Partial<
     Document,
     | "title"
     | "description"
-    | "department"
+    | "course"
     | "priority"
     | "content"
     | "language"
@@ -74,7 +74,7 @@ export function useDocuments() {
     file: File | null,
     title: string,
     description?: string,
-    department?: string,
+    course?: string,
     priority?: string,
     sharedWith?: string[],
     is_public?: boolean,
@@ -111,7 +111,7 @@ export function useDocuments() {
           user_id: user.id,
           title: title,
           description,
-          department,
+          course,
           priority,
           shared_with: sharedWith, 
           file_name: fileName,

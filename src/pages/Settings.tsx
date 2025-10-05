@@ -25,16 +25,20 @@ import {
   RefreshCw,
   Key
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { profile, loading, updateProfile, changePassword } = useProfile();
+  const [isStudent, setIsStudent] = useState(false);
   
   const [profileForm, setProfileForm] = useState({
     display_name: '',
-    department: '',
-    job_title: '',
+    role: '',
+    course: '',
+    section: '',
+    year: '',
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -65,14 +69,22 @@ export default function Settings() {
     if (profile) {
       setProfileForm({
         display_name: profile.display_name || '',
-        department: profile.department || '',
-        job_title: profile.job_title || '',
+        role: profile.role || '',
+        course: profile.course || '',
+        section: profile.section || '',
+        year: profile.year?.toString() || '',
       });
+      if (profile.role && (profile.role.toLowerCase() === 'student' || profile.role.toLowerCase() === 'studen')) {
+        setIsStudent(true);
+      }
     }
   }, [profile]);
 
   const handleProfileSave = async () => {
-    const success = await updateProfile(profileForm);
+    const success = await updateProfile({
+      ...profileForm,
+      year: parseInt(profileForm.year, 10) || null,
+    });
     if (success) {
       toast({
         title: "Profile updated",
@@ -140,314 +152,337 @@ export default function Settings() {
         </div>
 
         {/* Settings Content */}
-        <div className="p-6 w-full max-w-4xl mx-auto">
-          <div className="space-y-8">
-            
-            {/* Profile Settings */}
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-3">
-                <User className="w-5 h-5 text-primary" />
-                <div>
-                  <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>Update your personal details and role</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="display_name">Full Name</Label>
-                    <Input 
-                      id="display_name" 
-                      value={profileForm.display_name}
-                      onChange={(e) => setProfileForm(prev => ({ ...prev, display_name: e.target.value }))}
-                      placeholder="Enter your full name"
-                      disabled={loading}
-                    />
+        <ScrollArea className="h-0 flex-grow">
+          <div className="p-6 w-full max-w-4xl mx-auto">
+            <div className="space-y-8">
+              
+              {/* Profile Settings */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <User className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle>Profile Information</CardTitle>
+                    <CardDescription>Update your personal details and role</CardDescription>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      value={user?.email || ''} 
-                      disabled 
-                      className="bg-muted"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input 
-                      id="department" 
-                      value={profileForm.department}
-                      onChange={(e) => setProfileForm(prev => ({ ...prev, department: e.target.value }))}
-                      placeholder="Enter your department"
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="job_title">Job Title</Label>
-                    <Input 
-                      id="job_title" 
-                      value={profileForm.job_title}
-                      onChange={(e) => setProfileForm(prev => ({ ...prev, job_title: e.target.value }))}
-                      placeholder="Enter your job title"
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button onClick={handleProfileSave} disabled={loading} className="gap-2">
-                    <Save className="w-4 h-4" />
-                    Save Profile
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Password Settings */}
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-3">
-                <Key className="w-5 h-5 text-primary" />
-                <div>
-                  <CardTitle>Change Password</CardTitle>
-                  <CardDescription>Update your account password</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <Input 
-                      id="new-password" 
-                      type="password"
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                      placeholder="Enter new password"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
-                    <Input 
-                      id="confirm-password" 
-                      type="password"
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button 
-                    onClick={handlePasswordChange} 
-                    disabled={!passwordForm.newPassword || !passwordForm.confirmPassword}
-                    className="gap-2"
-                  >
-                    <Key className="w-4 h-4" />
-                    Change Password
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Notification Settings */}
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-3">
-                <Bell className="w-5 h-5 text-primary" />
-                <div>
-                  <CardTitle>Notification Preferences</CardTitle>
-                  <CardDescription>Choose how you want to be notified</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="email-notif">Email Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="display_name">Full Name</Label>
+                      <Input 
+                        id="display_name" 
+                        value={profileForm.display_name}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, display_name: e.target.value }))}
+                        placeholder="Enter your full name"
+                        disabled={loading || isStudent}
+                      />
                     </div>
-                    <Switch 
-                      id="email-notif" 
-                      checked={settings.notifications.email}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, email: checked }
-                        }))
-                      }
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input 
+                        id="email" 
+                        value={user?.email || ''} 
+                        disabled 
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Input 
+                        id="role" 
+                        value={profileForm.role}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, role: e.target.value }))}
+                        placeholder="e.g. Student, Teacher"
+                        disabled={loading || isStudent}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="course">Course</Label>
+                      <Input 
+                        id="course" 
+                        value={profileForm.course}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, course: e.target.value }))}
+                        placeholder="e.g. Computer Science"
+                        disabled={loading || isStudent}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="section">Section</Label>
+                      <Input 
+                        id="section" 
+                        value={profileForm.section}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, section: e.target.value }))}
+                        placeholder="e.g. A, B"
+                        disabled={loading || isStudent}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="year">Year</Label>
+                      <Input 
+                        id="year" 
+                        type="number"
+                        value={profileForm.year}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, year: e.target.value }))}
+                        placeholder="e.g. 2025"
+                        disabled={loading || isStudent}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={handleProfileSave} disabled={loading || isStudent} className="gap-2">
+                      <Save className="w-4 h-4" />
+                      Save Profile
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Password Settings */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <Key className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle>Change Password</CardTitle>
+                    <CardDescription>Update your account password</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input 
+                        id="new-password" 
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="Enter new password"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input 
+                        id="confirm-password" 
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={handlePasswordChange} 
+                      disabled={!passwordForm.newPassword || !passwordForm.confirmPassword}
+                      className="gap-2"
+                    >
+                      <Key className="w-4 h-4" />
+                      Change Password
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Notification Settings */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <Bell className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle>Notification Preferences</CardTitle>
+                    <CardDescription>Choose how you want to be notified</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="email-notif">Email Notifications</Label>
+                        <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                      </div>
+                      <Switch 
+                        id="email-notif" 
+                        checked={settings.notifications.email}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            notifications: { ...prev.notifications, email: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="urgent-notif">Urgent Document Alerts</Label>
+                        <p className="text-sm text-muted-foreground">Get notified immediately for urgent documents</p>
+                      </div>
+                      <Switch 
+                        id="urgent-notif" 
+                        checked={settings.notifications.urgent}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            notifications: { ...prev.notifications, urgent: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="weekly-notif">Weekly Summary</Label>
+                        <p className="text-sm text-muted-foreground">Receive weekly activity reports</p>
+                      </div>
+                      <Switch 
+                        id="weekly-notif" 
+                        checked={settings.notifications.weekly}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            notifications: { ...prev.notifications, weekly: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Assistant Settings */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <RefreshCw className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      AI Assistant Features
+                      <Badge variant="secondary" className="text-xs">BETA</Badge>
+                    </CardTitle>
+                    <CardDescription>Configure AI-powered document intelligence</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="ai-enabled">Enable AI Assistant</Label>
+                        <p className="text-sm text-muted-foreground">Get AI-powered document insights and search</p>
+                      </div>
+                      <Switch 
+                        id="ai-enabled" 
+                        checked={settings.ai.enabled}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            ai: { ...prev.ai, enabled: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="ai-suggestions">Smart Suggestions</Label>
+                        <p className="text-sm text-muted-foreground">Get relevant document recommendations</p>
+                      </div>
+                      <Switch 
+                        id="ai-suggestions" 
+                        checked={settings.ai.suggestions}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            ai: { ...prev.ai, suggestions: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="ai-autotag">Auto Priority Tagging</Label>
+                        <p className="text-sm text-muted-foreground">Automatically assign priority levels to new documents</p>
+                      </div>
+                      <Switch 
+                        id="ai-autotag" 
+                        checked={settings.ai.autoTag}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            ai: { ...prev.ai, autoTag: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Security & Privacy */}
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <Shield className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle>Security & Privacy</CardTitle>
+                    <CardDescription>Manage your data privacy and security preferences</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="analytics">Share Usage Analytics</Label>
+                        <p className="text-sm text-muted-foreground">Help improve Nexus by sharing anonymous usage data</p>
+                      </div>
+                      <Switch 
+                        id="analytics" 
+                        checked={settings.privacy.shareAnalytics}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            privacy: { ...prev.privacy, shareAnalytics: checked }
+                          }))
+                        }
+                      />
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="activity">Activity Tracking</Label>
+                        <p className="text-sm text-muted-foreground">Track document access for audit purposes</p>
+                      </div>
+                      <Switch 
+                        id="activity" 
+                        checked={settings.privacy.trackActivity}
+                        onCheckedChange={(checked) => 
+                          setSettings(prev => ({
+                            ...prev,
+                            privacy: { ...prev.privacy, trackActivity: checked }
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
                   
                   <Separator />
                   
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="urgent-notif">Urgent Document Alerts</Label>
-                      <p className="text-sm text-muted-foreground">Get notified immediately for urgent documents</p>
-                    </div>
-                    <Switch 
-                      id="urgent-notif" 
-                      checked={settings.notifications.urgent}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, urgent: checked }
-                        }))
-                      }
-                    />
+                  <div className="pt-4">
+                    <Button variant="outline" className="w-full">
+                      <Database className="w-4 h-4 mr-2" />
+                      Export My Data
+                    </Button>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="weekly-notif">Weekly Summary</Label>
-                      <p className="text-sm text-muted-foreground">Receive weekly activity reports</p>
-                    </div>
-                    <Switch 
-                      id="weekly-notif" 
-                      checked={settings.notifications.weekly}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          notifications: { ...prev.notifications, weekly: checked }
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* AI Assistant Settings */}
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-3">
-                <RefreshCw className="w-5 h-5 text-primary" />
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    AI Assistant Features
-                    <Badge variant="secondary" className="text-xs">BETA</Badge>
-                  </CardTitle>
-                  <CardDescription>Configure AI-powered document intelligence</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="ai-enabled">Enable AI Assistant</Label>
-                      <p className="text-sm text-muted-foreground">Get AI-powered document insights and search</p>
-                    </div>
-                    <Switch 
-                      id="ai-enabled" 
-                      checked={settings.ai.enabled}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          ai: { ...prev.ai, enabled: checked }
-                        }))
-                      }
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="ai-suggestions">Smart Suggestions</Label>
-                      <p className="text-sm text-muted-foreground">Get relevant document recommendations</p>
-                    </div>
-                    <Switch 
-                      id="ai-suggestions" 
-                      checked={settings.ai.suggestions}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          ai: { ...prev.ai, suggestions: checked }
-                        }))
-                      }
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="ai-autotag">Auto Priority Tagging</Label>
-                      <p className="text-sm text-muted-foreground">Automatically assign priority levels to new documents</p>
-                    </div>
-                    <Switch 
-                      id="ai-autotag" 
-                      checked={settings.ai.autoTag}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          ai: { ...prev.ai, autoTag: checked }
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Security & Privacy */}
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-3">
-                <Shield className="w-5 h-5 text-primary" />
-                <div>
-                  <CardTitle>Security & Privacy</CardTitle>
-                  <CardDescription>Manage your data privacy and security preferences</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="analytics">Share Usage Analytics</Label>
-                      <p className="text-sm text-muted-foreground">Help improve Nexus by sharing anonymous usage data</p>
-                    </div>
-                    <Switch 
-                      id="analytics" 
-                      checked={settings.privacy.shareAnalytics}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          privacy: { ...prev.privacy, shareAnalytics: checked }
-                        }))
-                      }
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="activity">Activity Tracking</Label>
-                      <p className="text-sm text-muted-foreground">Track document access for audit purposes</p>
-                    </div>
-                    <Switch 
-                      id="activity" 
-                      checked={settings.privacy.trackActivity}
-                      onCheckedChange={(checked) => 
-                        setSettings(prev => ({
-                          ...prev,
-                          privacy: { ...prev.privacy, trackActivity: checked }
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="pt-4">
-                  <Button variant="outline" className="w-full">
-                    <Database className="w-4 h-4 mr-2" />
-                    Export My Data
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
+            </div>
           </div>
-        </div>
+        </ScrollArea>
       </SidebarInset>
     </SidebarProvider>
   );

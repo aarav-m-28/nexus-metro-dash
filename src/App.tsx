@@ -10,8 +10,12 @@ import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
 import ProfilePage from "./pages/Profile";
-import Login from "./pages/Login";
+import LoginAnimated from "./pages/LoginAnimated";
+import Signup from "./pages/Signup";
+import CompleteProfile from "./pages/CompleteProfile";
 import NotFound from "./pages/NotFound";
+import { SignatureRequests } from "./pages/SignatureRequests";
+import PermissionsPage from "./pages/Permissions";
 
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error?: any }>{
@@ -64,12 +68,12 @@ const App = () => {
             <HashRouter>
               <RouteLogger>
                 <Routes>
-                  <Route path="/" element={<Login />} />
-                  <Route path="/dashboard" element={
+                  <Route path="/" element={
                     <ProtectedRoute>
                       <Index />
                     </ProtectedRoute>
                   } />
+                  <Route path="/login" element={<LoginAnimated />} />
                   <Route path="/search" element={
                     <ProtectedRoute>
                       <Search />
@@ -85,8 +89,23 @@ const App = () => {
                       <ProfilePage />
                     </ProtectedRoute>
                   } />
-                  <Route path="/login" element={<Login />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="/signature-requests" element={
+                    <ProtectedRoute>
+                      <SignatureRequests />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/permissions" element={
+                    <ProtectedRoute>
+                      <PermissionsPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/login" element={<LoginAnimated />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/complete-profile/:role" element={
+                    <ProtectedRoute>
+                      <CompleteProfile />
+                    </ProtectedRoute>
+                  } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </RouteLogger>

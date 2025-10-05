@@ -1,0 +1,202 @@
+
+:root {
+    --bg-color: #0d0b1f;
+    --primary-glow-rgb: 192, 132, 252; /* purple-400 */
+    --secondary-glow-rgb: 245, 158, 11; /* amber-500 */
+    --tertiary-glow-rgb: 0, 255, 255; /* Cyan */
+    --primary-glow-dark-rgb: 142, 68, 173;
+    --secondary-glow-dark-rgb: 211, 84, 0;
+    --tertiary-glow-dark-rgb: 0, 139, 139;
+
+    --lavender-light-rgb: 230, 230, 250;
+    --lavender-medium-rgb: 181, 126, 220;
+    --lavender-dark-rgb: 138, 43, 226;
+}
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color);
+    color: #e0e7ff;
+    overflow: hidden;
+}
+.stars {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background: transparent;
+}
+.stars::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    box-shadow: 
+        100px 30px #fff, 200px 90px #fff, 300px 10px #fff, 400px 70px #fff, 500px 20px #fff, 
+        600px 80px #fff, 700px 40px #fff, 800px 100px #fff, 900px 50px #fff, 1000px 10px #fff,
+        1100px 60px #fff, 1200px 30px #fff, 1300px 90px #fff, 1400px 20px #fff, 1500px 80px #fff,
+        1600px 40px #fff, 1700px 100px #fff, 1800px 50px #fff, 1900px 10px #fff, 2000px 70px #fff,
+        2100px 30px #fff, 2200px 90px #fff, 2300px 10px #fff, 2400px 70px #fff, 2500px 20px #fff, 
+        2600px 80px #fff, 2700px 40px #fff, 2800px 100px #fff, 2900px 50px #fff, 3000px 10px #fff,
+        3100px 60px #fff, 3200px 30px #fff, 3300px 90px #fff, 3400px 20px #fff, 3500px 80px #fff,
+        3600px 40px #fff, 3700px 100px #fff, 3800px 50px #fff, 3900px 10px #fff, 4000px 70px #fff,
+        4100px 30px #fff, 4200px 90px #fff, 4300px 10px #fff, 4400px 70px #fff, 4500px 20px #fff, 
+        4600px 80px #fff, 4700px 40px #fff, 4800px 100px #fff, 4900px 50px #fff, 5000px 10px #fff;
+    animation: animStar 50s linear infinite;
+}
+.stars::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    box-shadow: 
+        50px 150px #fff, 150px 20px #fff, 250px 80px #fff, 350px 30px #fff, 450px 90px #fff, 
+        550px 40px #fff, 650px 10px #fff, 750px 70px #fff, 850px 20px #fff, 950px 80px #fff,
+        1050px 30px #fff, 1150px 90px #fff, 1250px 10px #fff, 1350px 70px #fff, 1450px 20px #fff,
+        1550px 80px #fff, 1650px 40px #fff, 1750px 100px #fff, 1850px 50px #fff, 1950px 10px #fff,
+        2050px 60px #fff, 2150px 30px #fff, 2250px 90px #fff, 2350px 10px #fff, 2450px 70px #fff, 
+        2550px 20px #fff, 2650px 80px #fff, 2750px 40px #fff, 2850px 100px #fff, 2950px 50px #fff,
+        3050px 10px #fff, 3150px 60px #fff, 3250px 30px #fff, 3350px 90px #fff, 3450px 20px #fff,
+        3550px 80px #fff, 3650px 40px #fff, 3750px 100px #fff, 3850px 50px #fff, 3950px 10px #fff,
+        4050px 60px #fff, 4150px 30px #fff, 4250px 90px #fff, 4350px 10px #fff, 4450px 70px #fff, 
+        4550px 20px #fff, 4650px 80px #fff, 4750px 40px #fff, 4850px 100px #fff, 4950px 50px #fff;
+    animation: animStar 100s linear infinite;
+}
+@keyframes animStar {
+    from { transform: translateY(0px); }
+    to { transform: translateY(-2000px); }
+}
+.liquidCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+.blurOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9;
+    backdrop-filter: blur(10px);
+    background-color: rgba(0, 0, 0, 0.3);
+}
+.loginContainer {
+    position: relative;
+    z-index: 10;
+}
+.loginCard {
+    background: rgba(17, 14, 38, 0.5);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 80px rgba(0, 0, 0, 0.3);
+}
+.inputWrapper {
+    position: relative;
+}
+.inputField {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(224, 231, 255, 0.2);
+    padding: 0.75rem 0.25rem;
+    caret-color: rgb(var(--primary-glow-rgb));
+}
+.inputField:focus {
+    outline: none;
+}
+.inputLabel {
+    position: absolute;
+    left: 0.25rem;
+    top: 0.75rem;
+    pointer-events: none;
+    transition: all 0.3s ease, background 0.3s ease-in-out;
+    color: rgba(224, 231, 255, 0.5);
+}
+.inputField:focus + .inputLabel,
+.inputField:not(:placeholder-shown) + .inputLabel {
+    top: -1rem;
+    font-size: 0.875rem;
+    color: rgb(var(--primary-glow-rgb));
+}
+.underline {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: rgb(var(--primary-glow-rgb));
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.4s ease;
+}
+.inputField:focus ~ .underline {
+    transform: scaleX(1);
+}
+.loginButton {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(45deg, rgb(var(--secondary-glow-rgb)), rgb(var(--primary-glow-rgb)), rgb(var(--primary-glow-rgb)), rgb(var(--secondary-glow-rgb)));
+    background-size: 200% auto; /* Make the gradient larger than the element */
+    transition: all 0.3s ease, background 0.3s ease-in-out; /* Add background to transition */
+    box-shadow: 0 0 25px rgba(var(--primary-glow-rgb), 0.3);
+    animation: gradientShift 3s linear infinite;
+}
+.loginButton:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 0 40px rgba(var(--primary-glow-rgb), 0.6);
+    background: radial-gradient(circle at center, rgba(var(--lavender-light-rgb), 0.7) 0%, rgba(var(--lavender-medium-rgb), 0.7) 33%, rgba(var(--lavender-dark-rgb), 0.7) 66%, rgba(var(--lavender-light-rgb), 0.7) 100%);
+    background-size: 200% 200%;
+    animation: gradientRadialShift 4s ease-in-out infinite; /* Re-added animation */
+}
+.shockwave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgb(var(--primary-glow-rgb));
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.animatedTextGradient {
+    background-image: radial-gradient(circle, rgba(var(--lavender-light-rgb), 1) 0%, rgba(var(--lavender-medium-rgb), 1) 50%, rgba(var(--lavender-dark-rgb), 1) 100%);
+    background-size: 800% 800%; /* Increased size */
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientRadialShift 4s ease-in-out infinite;
+    font-family: 'Playfair Display', serif;
+}
+
+@keyframes gradientRadialShift {
+    0% {
+        background-position: 25% 25%; /* Changed to 25% 25% */
+    }
+    50% {
+        background-position: 75% 75%; /* Changed to 75% 75% */
+    }
+    100% {
+        background-position: 25% 25%; /* Changed to 25% 25% */
+    }
+}
+
+@keyframes gradientShift {
+    to {
+        background-position: 200% center;
+    }
+}
