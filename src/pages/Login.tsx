@@ -83,99 +83,86 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    toast({
+      title: "Feature not available",
+      description: "Login with Google is not yet implemented.",
+      variant: "destructive"
+    });
+  };
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-accent/10 dark:via-background/90 dark:to-primary/10">
-      <AnimatedBackground />
-      
-      {/* Vibrant floating elements for light mode */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Primary floating orbs */}
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-blue-400/40 to-violet-500/30 dark:from-primary/20 dark:to-accent/20 rounded-full blur-xl animate-pulse" />
-        <div className="absolute top-3/4 right-1/4 w-24 h-24 bg-gradient-to-br from-emerald-400/35 to-cyan-500/30 dark:from-accent/20 dark:to-primary/20 rounded-full blur-xl animate-pulse delay-700" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-br from-rose-400/25 to-orange-500/20 dark:from-primary/10 dark:to-accent/10 rounded-full blur-2xl animate-pulse delay-1000" />
-        
-        {/* Additional animated elements */}
-        <div className="absolute top-16 right-1/3 w-20 h-20 bg-gradient-to-br from-purple-400/30 to-pink-500/25 rounded-full blur-lg animate-[pulse_3s_ease-in-out_infinite]" />
-        <div className="absolute bottom-1/4 left-1/6 w-28 h-28 bg-gradient-to-br from-indigo-400/25 to-blue-500/20 rounded-full blur-xl animate-[pulse_4s_ease-in-out_infinite]" />
-        
-        {/* Subtle moving particles */}
-        <div className="absolute top-1/3 right-1/5 w-4 h-4 bg-gradient-to-br from-yellow-400/60 to-amber-500/40 rounded-full animate-[bounce_2s_infinite] blur-sm" />
-        <div className="absolute bottom-1/3 left-1/3 w-3 h-3 bg-gradient-to-br from-teal-400/50 to-green-500/40 rounded-full animate-[bounce_3s_infinite] delay-500 blur-sm" />
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="hidden bg-muted lg:flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background">
+        <div className="text-center px-12">
+            <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="animate-pulse">
+              <defs>
+                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: 'rgb(99, 102, 241)', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: 'rgb(168, 85, 247)', stopOpacity: 1}} />
+                </linearGradient>
+                <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: 'rgb(59, 130, 246)', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: 'rgb(34, 211, 238)', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <g transform="translate(100, 100)">
+                <circle cx="0" cy="0" r="80" fill="url(#grad1)" />
+                <circle cx="-30" cy="-30" r="60" fill="url(#grad2)" style={{mixBlendMode: 'multiply'}} className="animate-bounce" />
+              </g>
+            </svg>
+            <h1 className="text-4xl font-bold text-foreground mt-8">Welcome to Nexus</h1>
+            <p className="mt-4 text-muted-foreground">Your unified hub for seamless document management and collaboration.</p>
+        </div>
       </div>
-
-      <main className="relative z-10 w-full max-w-md p-4">
-        <h1 className="sr-only">Login to Nexus</h1>
-        <Card className="backdrop-blur-md supports-[backdrop-filter]:bg-card/90 border-border/40 shadow-2xl animate-fade-in hover:shadow-3xl transition-all duration-500 hover:scale-[1.02]">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-accent text-primary-foreground flex items-center justify-center shadow-lg animate-scale-in hover:rotate-3 transition-all duration-300">
-              <ShieldCheck className="w-7 h-7" />
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">{isSignUp ? 'Sign Up' : 'Login'}</h1>
+            <p className="text-balance text-muted-foreground">
+              {isSignUp ? 'Enter your information to create an account' : 'Enter your email below to login to your account'}
+            </p>
+          </div>
+          <form onSubmit={onSubmit} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-            <CardTitle className="text-gradient bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-accent bg-clip-text text-transparent">
-              {isSignUp ? "Create Account" : "Login to Nexus"}
-            </CardTitle>
-            <CardDescription className="text-muted-foreground/80">
-              {isSignUp ? "Create your account to get started" : "Access your documents and workflows"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
+            <div className="grid gap-2">
+              <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
-                  required
-                />
+                {!isSignUp && <a href="#" className="ml-auto inline-block text-sm underline">Forgot your password?</a>}
               </div>
-
-              <Button type="submit" disabled={loading || authLoading} className={cn("w-full gap-2 bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 dark:from-primary dark:to-accent dark:hover:from-primary dark:hover:to-accent/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]")}> 
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    <span className="animate-pulse">{isSignUp ? "Creating account..." : "Signing in..."}</span>
-                  </>
-                ) : (
-                  <>
-                    {isSignUp ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
-                    {isSignUp ? "Create Account" : "Sign in"}
-                  </>
-                )}
-              </Button>
-
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <button 
-                  type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="hover:text-accent transition-colors"
-                >
-                  {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
-                </button>
-                {!isSignUp && (
-                  <button className="hover:text-accent transition-colors">Forgot password?</button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </main>
+              <Input 
+                id="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading || authLoading}>
+              {loading ? (isSignUp ? 'Creating account...' : 'Logging in...') : (isSignUp ? 'Sign Up' : 'Login')}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+              Login with Google
+            </Button>
+          </form>
+          <div className="mt-4 text-center text-sm">
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{" "}
+            <button onClick={() => setIsSignUp(!isSignUp)} className="underline">
+              {isSignUp ? 'Sign in' : 'Sign up'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

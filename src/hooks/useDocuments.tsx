@@ -16,10 +16,14 @@ export interface Document {
   updated_at: string;
   user_id?: string;
   course?: string;
-  priority?: string;
+  category?: string;
   content?: string;
   language?: string;
   shared_with?: string[];
+  subject?: string;
+  year?: string;
+  target_role?: string;
+  section?: string;
 }
 
 export type DocumentUpdatePayload = Partial<
@@ -28,10 +32,14 @@ export type DocumentUpdatePayload = Partial<
     | "title"
     | "description"
     | "course"
-    | "priority"
+    | "category"
     | "content"
     | "language"
     | "shared_with"
+    | "subject"
+    | "year"
+    | "target_role"
+    | "section"
   >
 >;
 
@@ -75,10 +83,14 @@ export function useDocuments() {
     title: string,
     description?: string,
     course?: string,
-    priority?: string,
+    category?: string,
     sharedWith?: string[],
     is_public?: boolean,
     language?: string,
+    subject?: string,
+    year?: string,
+    target_role?: string,
+    section?: string,
     content?: string
   ) => {
     if (!user) return null;
@@ -112,7 +124,7 @@ export function useDocuments() {
           title: title,
           description,
           course,
-          priority,
+          category,
           shared_with: sharedWith, 
           file_name: fileName,
           file_size: fileSize,
@@ -120,6 +132,10 @@ export function useDocuments() {
           storage_path: filePath, 
           is_public: is_public || false,
           language: language,
+          subject: subject,
+          year: year,
+          target_role: target_role,
+          section: section,
           content: content,
         })
         .select()

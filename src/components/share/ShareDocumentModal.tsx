@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Share2, Copy, Mail, Link, Users, X, Check, User } from "lucide-react";
+import { Share2, Users, X, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,7 +14,6 @@ interface ShareDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
   documentId: string;
-  preselectedUser?: Profile;
   documentTitle: string;
 }
 
@@ -24,7 +22,6 @@ interface Profile {
   user_id: string;
   display_name: string;
   department: string;
-  job_title: string;
   email: string;
 }
 
@@ -39,50 +36,29 @@ const departments = [
   "Human Resources"
 ];
 
-const accessLevels = [
-  { value: "view", label: "View Only", description: "Can view and download" },
-  { value: "comment", label: "Comment", description: "Can view, download, and comment" },
-  { value: "edit", label: "Edit", description: "Can view, download, comment, and edit" }
-];
-
-export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUser, documentTitle }: ShareDocumentModalProps) {
-  const [shareMethod, setShareMethod] = useState<"internal" | "external" | "personal">("internal");
+export function ShareDocumentModal({ isOpen, onClose, documentId, documentTitle }: ShareDocumentModalProps) {
+  const [step, setStep] = useState(1);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [externalEmails, setExternalEmails] = useState<string[]>([]);
-  const [emailInput, setEmailInput] = useState("");
-  const [userSearch, setUserSearch] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Profile[]>([]);
+  const [userSearch, setUserSearch] = useState("");
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
-  const [isUserSearchFocused, setIsUserSearchFocused] = useState(false);
-  const [accessLevel, setAccessLevel] = useState("view");
-  const [message, setMessage] = useState("");
-  const [expireAfter, setExpireAfter] = useState("");
-  const [requirePassword, setRequirePassword] = useState(false);
-  const [allowDownload, setAllowDownload] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
-  const [shareLink, setShareLink] = useState("");
   const { toast } = useToast();
+  const [subject, setSubject] = useState("");
+  const [year, setYear] = useState("");
+  const [targetRole, setTargetRole] = useState("");
+  const [category, setCategory] = useState("");
 
   useEffect(() => {
-    if (isOpen && preselectedUser) {
-      setShareMethod("personal");
-      setSelectedUsers([preselectedUser]);
-    } else if (!isOpen) {
-      // Reset to default when closing if it was pre-filled
-      setShareMethod("internal");
-    }
     if (isOpen && allProfiles.length === 0) {
       const fetchProfiles = async () => {
         const { data, error } = await supabase.from('profiles').select('*').returns<Profile[]>();
-        if (error) {
-          console.error('Error fetching profiles:', error);
-        } else if (data) {
-          setAllProfiles(data);
-        }
+        if (error) console.error('Error fetching profiles:', error);
+        else if (data) setAllProfiles(data);
       };
       fetchProfiles();
     }
-  }, [isOpen, allProfiles.length, preselectedUser]);
+  }, [isOpen, allProfiles.length]);
 
   const handleAddDepartment = (dept: string) => {
     if (!selectedDepartments.includes(dept)) {
@@ -94,24 +70,11 @@ export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUse
     setSelectedDepartments(prev => prev.filter(d => d !== dept));
   };
 
-  const handleAddEmail = () => {
-    const email = emailInput.trim();
-    if (email && email.includes('@') && !externalEmails.includes(email)) {
-      setExternalEmails(prev => [...prev, email]);
-      setEmailInput("");
-    }
-  };
-
-  const handleRemoveEmail = (email: string) => {
-    setExternalEmails(prev => prev.filter(e => e !== email));
-  };
-
   const handleAddUser = (user: Profile) => {
     if (!selectedUsers.some(u => u.id === user.id)) {
       setSelectedUsers(prev => [...prev, user]);
     }
     setUserSearch("");
-    setIsUserSearchFocused(false);
   };
 
   const handleRemoveUser = (user: Profile) => {
@@ -121,388 +84,154 @@ export function ShareDocumentModal({ isOpen, onClose, documentId, preselectedUse
   const filteredProfiles = allProfiles.filter(p => 
     p.display_name?.toLowerCase().includes(userSearch.toLowerCase())
   );
-  const generateShareLink = () => {
-    const baseUrl = window.location.origin;
-    const docId = documentTitle.toLowerCase().replace(/\s+/g, '-');
-    return `${baseUrl}/shared/${docId}?access=${accessLevel}&expires=${expireAfter}`;
-  };
 
   const handleShare = async () => {
-    if (shareMethod === "internal" && selectedDepartments.length === 0) {
-      toast({
-        title: "Select departments",
-        description: "Please select at least one department to share with",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (shareMethod === "external" && externalEmails.length === 0) {
-      toast({
-        title: "Add email addresses",
-        description: "Please add at least one email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (shareMethod === "personal" && selectedUsers.length === 0) {
-      toast({
-        title: "Select users",
-        description: "Please select at least one user to share with",
-        variant: "destructive"
-      });
+    if (selectedDepartments.length === 0 && selectedUsers.length === 0) {
+      toast({ title: "Select recipients", description: "Please select at least one department or user to share with", variant: "destructive" });
       return;
     }
 
     setIsSharing(true);
-    
     try {
-      if (shareMethod === 'internal' || shareMethod === 'personal') {
-        const { error } = await supabase.rpc('share_document', {
-          document_id: documentId,
-          share_with: shareMethod === 'internal' ? selectedDepartments : [],
-          share_with_users: shareMethod === 'personal' ? selectedUsers.map(u => u.user_id) : []
-        });
-
-        if (error) {
-          throw error;
-        }
-      } else {
-        // External sharing is not implemented on the backend yet.
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      
-      toast({
-        title: "Document shared successfully",
-        description: `${documentTitle} has been shared with the selected recipients`,
+      const { error } = await supabase.rpc('share_document', {
+        document_id: documentId,
+        share_with: selectedDepartments,
+        share_with_users: selectedUsers.map(u => u.user_id),
+        subject,
+        year,
+        target_role: targetRole,
+        category
       });
+      if (error) throw error;
+      
+      toast({ title: "Document shared successfully", description: `${documentTitle} has been shared.` });
       setTimeout(handleClose, 1500);
     } catch (error) {
       console.error("Error sharing document:", error);
-      toast({
-        title: "Sharing failed",
-        description: "There was an error sharing the document. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: "Sharing failed", description: "There was an error sharing the document.", variant: "destructive" });
     } finally {
       setIsSharing(false);
     }
   };
 
-  const copyShareLink = async () => {
-    if (shareLink) {
-      await navigator.clipboard.writeText(shareLink);
-      toast({
-        title: "Link copied",
-        description: "Share link has been copied to clipboard",
-      });
-    }
-  };
-
   const handleClose = () => {
+    setStep(1);
     setSelectedDepartments([]);
-    setExternalEmails([]);
     setSelectedUsers([]);
     setUserSearch("");
-    setEmailInput("");
-    setMessage("");
-    setShareLink("");
+    setSubject("");
+    setYear("");
+    setTargetRole("");
+    setCategory("");
     setIsSharing(false);
     onClose();
   };
 
+  const renderStep1 = () => (
+    <div className="space-y-6 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
+          <Label>Subject</Label>
+          <Input placeholder="Enter subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        </div>
+        <div className="space-y-3">
+          <Label>Category</Label>
+          <Select onValueChange={setCategory} value={category}>
+            <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="internal">Internal</SelectItem>
+              <SelectItem value="external">External</SelectItem>
+              <SelectItem value="confidential">Confidential</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-3">
+          <Label>Year</Label>
+          <Select onValueChange={setYear} value={year}>
+            <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1st Year</SelectItem>
+              <SelectItem value="2">2nd Year</SelectItem>
+              <SelectItem value="3">3rd Year</SelectItem>
+              <SelectItem value="4">4th Year</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-3">
+          <Label>Target Role</Label>
+          <Select onValueChange={setTargetRole} value={targetRole}>
+            <SelectTrigger><SelectValue placeholder="Select target role" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="faculty">Faculty</SelectItem>
+              <SelectItem value="hod">HOD</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <Label>Share with Departments</Label>
+        <Select onValueChange={handleAddDepartment}>
+          <SelectTrigger><SelectValue placeholder="Add departments" /></SelectTrigger>
+          <SelectContent>
+            {departments.filter(dept => !selectedDepartments.includes(dept)).map(dept => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {selectedDepartments.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {selectedDepartments.map(dept => (
+              <Badge key={dept} variant="secondary" className="gap-1">{dept}<Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handleRemoveDepartment(dept)}><X className="w-3 h-3" /></Button></Badge>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="space-y-3">
+        <Label>Share with Users</Label>
+        <Input placeholder="Search for users..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
+        {userSearch && (
+          <div className="border rounded-md max-h-48 overflow-y-auto">
+            {filteredProfiles.map(p => <div key={p.id} className="p-2 hover:bg-muted cursor-pointer" onClick={() => handleAddUser(p)}>{p.display_name}</div>)}
+          </div>
+        )}
+        {selectedUsers.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {selectedUsers.map(user => (
+              <Badge key={user.id} variant="secondary" className="gap-1">{user.display_name}<Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handleRemoveUser(user)}><X className="w-3 h-3" /></Button></Badge>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button variant="outline" onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleShare} disabled={isSharing || (selectedDepartments.length === 0 && selectedUsers.length === 0)}>
+          {isSharing ? 'Sharing...' : 'Share'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6 py-4">
+      <p>Step 2: Set permissions and share</p>
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+        <Button onClick={handleShare} disabled={isSharing}>Share</Button>
+      </div>
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
             Share Document
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Sharing: <span className="font-medium">{documentTitle}</span>
-          </p>
+          <p className="text-sm text-muted-foreground">Sharing: <span className="font-medium">{documentTitle}</span></p>
         </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {/* Share Method */}
-          <div className="space-y-3">
-            <Label>Share Method</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <Button
-                variant={shareMethod === "internal" ? "default" : "outline"}
-                onClick={() => setShareMethod("internal")}
-                className={`flex-1 gap-2 transition-all duration-200 ${shareMethod === 'internal' ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20' : ''}`}
-              >
-                <Users className="w-4 h-4" />
-                Internal (Departments)
-              </Button>
-              <Button
-                variant={shareMethod === "external" ? "default" : "outline"}
-                onClick={() => setShareMethod("external")}
-                className={`flex-1 gap-2 transition-all duration-200 ${shareMethod === 'external' ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20' : ''}`}
-              >
-                <Mail className="w-4 h-4" />
-                External (Email)
-              </Button>
-              <Button
-                variant={shareMethod === "personal" ? "default" : "outline"}
-                onClick={() => setShareMethod("personal")}
-                className={`flex-1 gap-2 transition-all duration-200 ${shareMethod === 'personal' ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20' : ''}`}
-              >
-                <User className="w-4 h-4" />
-                Personal (User)
-              </Button>
-            </div>
-          </div>
-
-          {/* Internal Sharing */}
-          {shareMethod === "internal" && (
-            <div className="space-y-3">
-              <Label>Select Departments</Label>
-              <Select onValueChange={handleAddDepartment}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Add departments to share with" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments
-                    .filter(dept => !selectedDepartments.includes(dept))
-                    .map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              
-              {selectedDepartments.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedDepartments.map((dept) => (
-                    <Badge key={dept} variant="secondary" className="gap-1">
-                      {dept}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleRemoveDepartment(dept)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* External Sharing */}
-          {shareMethod === "external" && (
-            <div className="space-y-3">
-              <Label>Email Addresses</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="share-email-input"
-                  name="email"
-                  autoComplete="email"
-                  placeholder="Enter email address"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddEmail()}
-                />
-                <Button onClick={handleAddEmail} disabled={!emailInput.trim()}>
-                  Add
-                </Button>
-              </div>
-              
-              {externalEmails.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {externalEmails.map((email) => (
-                    <Badge key={email} variant="secondary" className="gap-1">
-                      {email}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleRemoveEmail(email)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Personal Sharing */}
-          {shareMethod === "personal" && (
-            <div className="space-y-3">
-              <Label>Select Users</Label>
-              <div className="relative">
-                <Input
-                  id="share-user-input"
-                  name="user"
-                  autoComplete="off"
-                  placeholder="Search for users by name..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  onFocus={() => setIsUserSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsUserSearchFocused(false), 150)}
-                />
-                {isUserSearchFocused && userSearch && (
-                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {filteredProfiles.length > 0 ? (
-                      filteredProfiles.map(p => (
-                        <div key={p.id} className="p-2 hover:bg-muted cursor-pointer" onMouseDown={() => handleAddUser(p)}>
-                          <p className="font-medium">{p.display_name}</p>
-                          <p className="text-sm text-muted-foreground">{p.department}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-2 text-muted-foreground">No users found.</div>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              {selectedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedUsers.map((user) => (
-                    <Badge key={user.id} variant="secondary" className="gap-1">
-                      {user.display_name}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleRemoveUser(user)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Access Level */}
-          <div className="space-y-2">
-            <Label>Access Level</Label>
-            <Select value={accessLevel} onValueChange={setAccessLevel}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {accessLevels.map((level) => (
-                  <SelectItem key={level.value} value={level.value}>
-                    <div>
-                      <div className="font-medium">{level.label}</div>
-                      <div className="text-xs text-muted-foreground">{level.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Additional Settings */}
-          <div className="space-y-4">
-            <Label>Additional Settings</Label>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="allow-download">Allow Download</Label>
-                  <p className="text-xs text-muted-foreground">Recipients can download the document</p>
-                </div>
-                <Switch
-                  id="allow-download"
-                  checked={allowDownload}
-                  onCheckedChange={setAllowDownload}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="require-password">Require Password</Label>
-                  <p className="text-xs text-muted-foreground">Recipients need a password to access</p>
-                </div>
-                <Switch
-                  id="require-password"
-                  checked={requirePassword}
-                  onCheckedChange={setRequirePassword}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="expire-after">Link Expires After</Label>
-              <Select value={expireAfter} onValueChange={setExpireAfter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select expiration time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1day">1 Day</SelectItem>
-                  <SelectItem value="3days">3 Days</SelectItem>
-                  <SelectItem value="1week">1 Week</SelectItem>
-                  <SelectItem value="2weeks">2 Weeks</SelectItem>
-                  <SelectItem value="1month">1 Month</SelectItem>
-                  <SelectItem value="never">Never</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Message */}
-          <div className="space-y-2">
-            <Label htmlFor="message">Message (Optional)</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Add a message for the recipients"
-              rows={3}
-            />
-          </div>
-
-          {/* Share Link Display */}
-          {shareLink && (
-            <div className="space-y-2">
-              <Label>Share Link</Label>
-              <div className="flex gap-2">
-                <Input value={shareLink} readOnly className="font-mono text-xs" />
-                <Button variant="outline" onClick={copyShareLink} className="gap-2">
-                  <Copy className="w-4 h-4" />
-                  Copy
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={handleClose} disabled={isSharing}>
-            Cancel
-          </Button>
-          <Button onClick={handleShare} disabled={isSharing} className="gap-2">
-            {isSharing ? (
-              <>
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Sharing...
-              </>
-            ) : shareLink ? (
-              <>
-                <Check className="w-4 h-4" />
-                Shared
-              </>
-            ) : (
-              <>
-                <Share2 className="w-4 h-4" />
-                Share Document
-              </>
-            )}
-          </Button>
-        </div>
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
       </DialogContent>
     </Dialog>
   );

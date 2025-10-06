@@ -181,6 +181,7 @@ body {
     -webkit-text-fill-color: transparent;
     animation: gradientRadialShift 4s ease-in-out infinite;
     font-family: 'Playfair Display', serif;
+    text-align: center;
 }
 
 @keyframes gradientRadialShift {

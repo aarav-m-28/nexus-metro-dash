@@ -3,6 +3,11 @@ import anime from 'animejs';
 import styles from './LoginAnimated.module.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const LoginAnimated: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -11,11 +16,14 @@ const LoginAnimated: React.FC = () => {
     const shockwaveRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const { signIn } = useAuth();
+    const { toast } = useToast();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSignUp, setIsSignUp] = useState(false);
 
-    // Liquid Canvas Background (Original Version)
+    // Liquid Canvas Background
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -127,9 +135,11 @@ const LoginAnimated: React.FC = () => {
         }
     }, []);
 
-    // Button Click Shockwave
-    const handleLoginClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleLoginClick = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading) return;
+        setIsLoading(true);
+
         if (shockwaveRef.current) {
             anime({
                 targets: shockwaveRef.current,
@@ -142,71 +152,96 @@ const LoginAnimated: React.FC = () => {
         const { error } = await signIn(email, password);
         if (error) {
             console.error('Login error:', error);
-            alert(error.message || 'Login failed');
+            toast({
+                title: "Login Failed",
+                description: error.message || "Please check your credentials and try again.",
+                variant: "destructive",
+            });
         } else {
-            navigate('/'); // Redirect to dashboard or home page on successful login
+            toast({
+                title: "Login Successful",
+                description: "Welcome back! Redirecting you to the dashboard...",
+            });
+            navigate('/');
         }
+        setIsLoading(false);
+    };
+
+    const handleGoogleLogin = () => {
+        toast({
+          title: "Feature not available",
+          description: "Login with Google is not yet implemented.",
+          variant: "destructive"
+        });
     };
 
     return (
-        <body className={`${styles.body} flex items-center justify-center min-h-screen p-4`}>
+        <div className={`${styles.body} w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen`}>
             <div className={styles.stars}></div>
             <canvas id="liquid-canvas" ref={canvasRef} className={styles.liquidCanvas}></canvas>
             <div className={styles.blurOverlay}></div>
-            <div id="login-container" ref={loginContainerRef} className={`${styles.loginContainer} w-full max-w-sm`}>
-                <div className={`${styles.loginCard} p-8 md:p-10 space-y-8`}>
-                    <div className="text-center">
-                        <h1 className={`${styles.animatedTextGradient} text-3xl font-semibold tracking-wide`}>Nexus</h1>
-                        <p className="text-indigo-200 text-sm mt-2 opacity-70">Enter the portal</p>
-                    </div>
 
-                    <form id="login-form" className="space-y-10">
-                        <div className={styles.inputWrapper}>
-                            <input
-                                type="email"
+            <div className="hidden bg-muted lg:flex items-center justify-center relative z-10">
+                <div className="text-center px-12">
+                    <h1 className={`${styles.animatedTextGradient} text-4xl font-bold`}>Welcome to Nexus</h1>
+                    <p className="mt-4 text-indigo-200 opacity-70">Your unified hub for seamless document management and collaboration.</p>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-center py-12 relative z-10" ref={loginContainerRef}>
+                <div className="mx-auto grid w-[350px] gap-6">
+                    <div className="grid gap-2 text-center">
+                        <h1 className="text-3xl font-bold text-white">{isSignUp ? 'Create Account' : 'Login'}</h1>
+                        <p className="text-balance text-indigo-200 opacity-70">
+                            {isSignUp ? 'Enter your details to create an account' : 'Enter your email below to login to your account'}
+                        </p>
+                    </div>
+                    <form onSubmit={handleLoginClick} className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="email" className="text-indigo-200 opacity-70">Email</Label>
+                            <Input
                                 id="email"
-                                className={`${styles.inputField} w-full placeholder-transparent`}
-                                placeholder="Email"
+                                type="email"
+                                placeholder="m@example.com"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                            />
-                            <label htmlFor="email" className={styles.inputLabel}>Email</label>
-                            <div className={styles.underline}></div>
-                        </div>
-                        <div className={styles.inputWrapper}>
-                            <input
-                                type="password"
-                                id="password"
                                 className={`${styles.inputField} w-full placeholder-transparent`}
-                                placeholder="Password"
-                                required
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <div className="flex items-center">
+                                <Label htmlFor="password" className="text-indigo-200 opacity-70">Password</Label>
+                                {!isSignUp && <Link to="#" className="ml-auto inline-block text-sm text-purple-300 hover:underline">Forgot your password?</Link>}
+                            </div>
+                            <Input 
+                                id="password" 
+                                type="password" 
+                                required 
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                className={`${styles.inputField} w-full placeholder-transparent`}
+                                disabled={isLoading}
                             />
-                            <label htmlFor="password" className={styles.inputLabel}>Password</label>
-                            <div className={styles.underline}></div>
                         </div>
-                        <div>
-                            <button
-                                type="submit"
-                                id="login-button"
-                                ref={loginButtonRef}
-                                className={`${styles.loginButton} w-full font-semibold text-gray-900 py-3 rounded-lg`}
-                                onClick={handleLoginClick}
-                            >
-                                Login
-                                <div ref={shockwaveRef} className={styles.shockwave}></div>
-                            </button>
-                        </div>
-                        <p className="text-center text-sm text-indigo-200 opacity-70">
-                            Don't have an account? {' '}
-                            <Link to="/signup" className="text-purple-300 hover:underline">Sign Up</Link>
-                        </p>
+                        <Button type="submit" className={`${styles.loginButton} w-full`} disabled={isLoading} ref={loginButtonRef}>
+                            {isLoading ? <Loader2 className="animate-spin"/> : (isSignUp ? 'Sign Up' : 'Login')}
+                            <div ref={shockwaveRef} className={styles.shockwave}></div>
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+                            Login with Google
+                        </Button>
                     </form>
+                    <div className="mt-4 text-center text-sm text-indigo-200 opacity-70">
+                        {isSignUp ? 'Already have an account?' : "Don't have an account?"}{" "}
+                        <button onClick={() => setIsSignUp(!isSignUp)} className="underline text-purple-300 hover:underline">
+                            {isSignUp ? 'Sign in' : 'Sign up'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </body>
+        </div>
     );
 };
 
